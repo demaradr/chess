@@ -1,6 +1,6 @@
 package chess;
 
-import chess.PieceMovesCalculator.BishopMovesCalculator;
+import chess.PieceMovesCalculator.*;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -59,7 +59,7 @@ public class ChessPiece {
             case KING -> null;
             case QUEEN -> null;
             case BISHOP -> new BishopMovesCalculator().getMoves(board, myPosition);
-            case KNIGHT -> null;
+            case KNIGHT -> new KnightMovesCalculator().getMoves(board, myPosition);
             case ROOK -> null;
             case PAWN -> null;
         };
