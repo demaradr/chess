@@ -18,7 +18,6 @@ public class KnightMovesCalculator implements MovesCalculator {
             int row = myPosition.getRow() + dir[0];
             int col = myPosition.getColumn() + dir[1];
 
-            // Check bounds
             if (row >= 1 && row <= 8 && col >= 1 && col <= 8) {
                 ChessPosition newPos = new ChessPosition(row, col);
                 ChessPiece occupyingPiece = board.getPiece(newPos);
