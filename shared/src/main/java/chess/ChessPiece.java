@@ -2,7 +2,6 @@ package chess;
 
 import chess.PieceMovesCalculator.*;
 
-import java.util.ArrayList;
 import java.util.Collection;
 
 /**
