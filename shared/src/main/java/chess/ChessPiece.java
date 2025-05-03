@@ -57,10 +57,10 @@ public class ChessPiece {
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
         return switch (type) {
             case KING -> null;
-            case QUEEN -> null;
+            case QUEEN -> new QueenMovesCalculator().getMoves(board, myPosition);
             case BISHOP -> new BishopMovesCalculator().getMoves(board, myPosition);
             case KNIGHT -> new KnightMovesCalculator().getMoves(board, myPosition);
-            case ROOK -> null;
+            case ROOK -> new RookMovesCalculator().getMoves(board, myPosition);
             case PAWN -> null;
         };
     }

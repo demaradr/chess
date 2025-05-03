@@ -3,11 +3,13 @@ package chess.PieceMovesCalculator;
 import chess.*;
 import java.util.HashSet;
 
-public class BishopMovesCalculator implements MovesCalculator {
+public class QueenMovesCalculator implements MovesCalculator {
     @Override
     public HashSet<ChessMove> getMoves(ChessBoard board, ChessPosition myPosition) {
         HashSet<ChessMove> moves = new HashSet<>();
         int[][] directions = {
+                {1, 0}, {0, 1},
+                {-1, 0}, {0, -1},
                 {-1, 1}, {1, 1},
                 {1, -1}, {-1, -1}
         };
@@ -15,6 +17,7 @@ public class BishopMovesCalculator implements MovesCalculator {
         for (int[] dir : directions) {
             int row = myPosition.getRow();
             int col = myPosition.getColumn();
+
 
             while (true) {
                 row += dir[0];
@@ -27,10 +30,12 @@ public class BishopMovesCalculator implements MovesCalculator {
 
                 if (occupyingPiece == null) {
                     moves.add(new ChessMove(myPosition, newPos, null));
-                } else {
-                    if (occupyingPiece.getTeamColor() != board.getPiece(myPosition).getTeamColor()) {
-                        moves.add(new ChessMove(myPosition, newPos, null));
-                    }
+                }
+                else if (occupyingPiece.getTeamColor() != board.getPiece(myPosition).getTeamColor()) {
+                    moves.add(new ChessMove(myPosition, newPos, null));
+                    break;
+                }
+                else {
                     break;
                 }
             }
@@ -38,3 +43,4 @@ public class BishopMovesCalculator implements MovesCalculator {
         return moves;
     }
 }
+
