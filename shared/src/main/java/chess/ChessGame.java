@@ -10,7 +10,13 @@ import java.util.Collection;
  */
 public class ChessGame {
 
+    private TeamColor currentTurn;
+    private ChessBoard board;
+
     public ChessGame() {
+        this.board = new ChessBoard();
+        this.board.resetBoard();
+        this.currentTurn = TeamColor.WHITE;
 
     }
 
@@ -18,7 +24,7 @@ public class ChessGame {
      * @return Which team's turn it is
      */
     public TeamColor getTeamTurn() {
-        throw new RuntimeException("Not implemented");
+        return currentTurn;
     }
 
     /**
@@ -27,7 +33,29 @@ public class ChessGame {
      * @param team the team whose turn it is
      */
     public void setTeamTurn(TeamColor team) {
-        throw new RuntimeException("Not implemented");
+        currentTurn = team;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        ChessGame chessGame = (ChessGame) o;
+        return currentTurn == chessGame.currentTurn && Objects.equals(board, chessGame.board);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(currentTurn, board);
+    }
+
+    @Override
+    public String toString() {
+        return "ChessGame{" +
+                "currentTurn=" + currentTurn +
+                ", board=" + board +
+                '}';
     }
 
     /**
