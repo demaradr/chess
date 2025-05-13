@@ -166,7 +166,7 @@ public class ChessGame {
         ChessPosition kingPos = null;
 
         for (int row = 1; row <= 8; row++) {
-            for (int col = 1; col<=8; col++) {
+            for (int col = 1; col <= 8; col++) {
                 ChessPosition pos = new ChessPosition(row, col);
                 ChessPiece piece = board.getPiece(pos);
 
