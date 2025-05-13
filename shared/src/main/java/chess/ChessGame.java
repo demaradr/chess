@@ -99,6 +99,16 @@ public class ChessGame {
         return validMoves;
     }
 
+    private boolean checkAfterMove(TeamColor teamColor, ChessBoard board) {
+        ChessBoard original = this.board;
+        this.board = board;
+        boolean inCheck = isInCheck(teamColor);
+        this.board = original;
+        return inCheck;
+    }
+
+
+
     /**
      * Makes a move in a chess game
      *
