@@ -29,7 +29,7 @@ public class GameService {
     public HashSet<GameData> listGames(String authToken) throws DataAccessException {
         AuthData auth = authDAO.getAuth(authToken);
         if (auth == null) throw new DataAccessException("Unauthorized");
-        return (HashSet<GameData>) gameDAO.listGames(auth.username());
+        return new HashSet<>(gameDAO.listGames(auth.username()));
     }
 
     public void joinGame(String authToken, int gameID, String playerColor) throws DataAccessException {

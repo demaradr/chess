@@ -5,6 +5,7 @@ import dataaccess.DataAccessException;
 import request.RegisterRequest;
 import spark.*;
 import service.*;
+import response.ErrorResponse;
 
 public class RegisterHandler implements Route {
     private final UserService userService;
@@ -24,7 +25,7 @@ public class RegisterHandler implements Route {
             if (request.username() == null || request.password() == null || request.email() == null ||
                     request.username().isBlank() || request.password().isBlank() || request.email().isBlank()) {
                 res.status(400);
-                return gson.toJson(new ErrorMessage("Error required fields missing"));
+                return gson.toJson(new ErrorResponse("Error required fields missing"));
             }
             var userData = new model.UserData(request.username(), request.password(), request.email());
             var result = userService.register(userData);
@@ -34,12 +35,11 @@ public class RegisterHandler implements Route {
 
         } catch (DataAccessException e) {
             res.status(403);
-            return gson.toJson(new ErrorMessage("Error username already taken"));
+            return gson.toJson(new ErrorResponse("Error username already taken"));
         } catch (Exception e) {
             res.status(500);
-            return gson.toJson(new ErrorMessage("Internal server error"));
+            return gson.toJson(new ErrorResponse("Internal server error"));
         }
     }
-
-    private record ErrorMessage(String message) {}
 }
+

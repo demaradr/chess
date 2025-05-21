@@ -3,6 +3,8 @@ package server.handlers;
 import com.google.gson.Gson;
 import service.UserService;
 import spark.*;
+import response.ErrorResponse;
+import response.SuccessResponse;
 
 public class LogoutHandler implements Route {
     private final UserService userService;
@@ -27,6 +29,4 @@ public class LogoutHandler implements Route {
         }
     }
 
-    private record SuccessResponse(String message) {}
-    private record ErrorResponse(String message) {}
 }
