@@ -16,7 +16,7 @@ public class JoinGameHandler implements Route {
         try {
             gameService.joinGame(authToken, request.gameID(), request.playerColor());
             res.status(200);
-            return "{}"; // or some success message if you want
+            return "Successfully joined game.";
         } catch (Exception e) {
             res.status(403);
             return new Gson().toJson(new ErrorResponse(e.getMessage()));

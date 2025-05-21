@@ -1,18 +1,41 @@
 package server.handlers;
 
 import com.google.gson.Gson;
-import service.*;
+import dataaccess.DataAccessException;
 import spark.*;
+import service.*;
+import request.LoginRequest;
 
 public class LoginHandler implements Route {
     private final UserService userService;
-    public LoginHandler(UserService userService, Gson gson) { this.userService = userService; }
+    private final Gson gson;
+
+    public LoginHandler(UserService userService, Gson gson) {
+        this.userService = userService;
+        this.gson = gson;
+    }
 
     @Override
-    public Object handle(Request req, Response res) throws Exception {
-        var request = new Gson().fromJson(req.body(), request.LoginRequest.class);
-        var result = userService.login(request.username(), request.password());
-        res.status(result != null ? 200 : 401);
-        return new Gson().toJson(result);
+    public Object handle(Request req, Response res) {
+        try {
+            LoginRequest request = gson.fromJson(req.body(), LoginRequest.class);
+            if (request.username() == null || request.password() == null ||
+                    request.username().isBlank() || request.password().isBlank()) {
+                res.status(400);
+                return gson.toJson(new ErrorMessage("Error missing username or password"));
+            }
+            var result = userService.login(request.username(), request.password());
+            res.status(200);
+            return gson.toJson(result);
+        } catch (DataAccessException e) {
+            res.status(401);
+            return gson.toJson(new ErrorMessage("Error unauthorized"));
+        } catch (Exception e) {
+            res.status(500);
+            return gson.toJson(new ErrorMessage("Internal server error"));
+        }
     }
+
+    private record ErrorMessage(String message) {}
 }
+

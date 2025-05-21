@@ -1,9 +1,10 @@
 package dataaccess;
 
 import model.GameData;
-import chess.*;
+
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 
 public class MemoryGameDAO implements GameDAO {
     private final HashMap<Integer, GameData> games = new HashMap<>();
@@ -16,6 +17,11 @@ public class MemoryGameDAO implements GameDAO {
     @Override
     public GameData getGame(int gameID) {
         return games.get(gameID);
+    }
+
+    @Override
+    public Collection<GameData> listGames(String username) throws DataAccessException {
+        return List.of();
     }
 
     @Override

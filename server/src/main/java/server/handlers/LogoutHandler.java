@@ -6,13 +6,27 @@ import spark.*;
 
 public class LogoutHandler implements Route {
     private final UserService userService;
-    public LogoutHandler(UserService userService, Gson gson) { this.userService = userService; }
+    private final Gson gson;
+
+    public LogoutHandler(UserService userService, Gson gson) {
+        this.userService = userService;
+        this.gson = gson;
+    }
 
     @Override
     public Object handle(Request req, Response res) throws Exception {
         String authToken = req.headers("Authorization");
-        var result = userService.logout(authToken);
-        res.status(result.success() ? 200 : 401);
-        return new Gson().toJson(result);
+
+        try {
+            userService.logout(authToken);
+            res.status(200);
+            return gson.toJson(new SuccessResponse("Logged out successfully."));
+        } catch (Exception e) {
+            res.status(401);
+            return gson.toJson(new ErrorResponse("Error unauthorized"));
+        }
     }
+
+    private record SuccessResponse(String message) {}
+    private record ErrorResponse(String message) {}
 }
