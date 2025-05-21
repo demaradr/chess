@@ -9,7 +9,7 @@ public interface UserDAO {
     UserData getUser(String username) throws DataAccessException;
 
     boolean authenticateUser(String username, String password);
-    void clear();
 
     void createUser(String username, String password, String email);
+    void clear();
 }
