@@ -24,8 +24,8 @@ public class Server {
         GameService gameService = new GameService(gameDAO, authDAO);
 
         post("/user", new RegisterHandler(userService, gson));
-        post("/user/login", new LoginHandler(userService, gson));
-        post("/user/logout", new LogoutHandler(userService, gson));
+        post("/session", new LoginHandler(userService, gson));
+        delete("/session", new LogoutHandler(userService, gson));
 
         get("/game", new ListGamesHandler(gameService, gson));
         post("/game", new CreateGameHandler(gameService, gson));

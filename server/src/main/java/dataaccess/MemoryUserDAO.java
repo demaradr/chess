@@ -21,7 +21,19 @@ public class MemoryUserDAO implements UserDAO {
     }
 
     @Override
+    public boolean authenticateUser(String username, String password) {
+        UserData user = users.get(username);
+        return user != null && user.password().equals(password);
+    }
+
+    @Override
     public void clear() {
         users.clear();
+    }
+
+    @Override
+    public void createUser(String username, String password, String email) {
+        UserData user = new UserData(username, password, email);
+        users.put(username, user);
     }
 }
