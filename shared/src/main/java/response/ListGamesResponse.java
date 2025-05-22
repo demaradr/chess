@@ -1,8 +1,12 @@
 package response;
 
 import model.GameData;
-import java.util.Collection;
+import java.util.Set;
 
-public record ListGamesResponse(Collection<GameData> games) {
+public class ListGamesResponse {
+    public Set<GameData> games;
 
+    public ListGamesResponse(Set<GameData> games) {
+        this.games = games;
+    }
 }

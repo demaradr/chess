@@ -38,7 +38,7 @@ public class RegisterHandler implements Route {
             return gson.toJson(new ErrorResponse("Error username already taken"));
         } catch (Exception e) {
             res.status(500);
-            return gson.toJson(new ErrorResponse("Internal server error"));
+            return gson.toJson(new ErrorResponse("Error internal server"));
         }
     }
 }

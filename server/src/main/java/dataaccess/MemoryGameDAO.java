@@ -10,13 +10,20 @@ public class MemoryGameDAO implements GameDAO {
     private final HashMap<Integer, GameData> games = new HashMap<>();
 
     @Override
-    public void createGame(GameData game) {
+    public void createGame(GameData game) throws DataAccessException {
+        if (games.containsKey(game.gameID())) {
+            throw new DataAccessException("Error game already exists with ID " + game.gameID());
+        }
         games.put(game.gameID(), game);
     }
 
     @Override
-    public GameData getGame(int gameID) {
-        return games.get(gameID);
+    public GameData getGame(int gameID) throws DataAccessException {
+        GameData game = games.get(gameID);
+        if (game == null) {
+            throw new DataAccessException("Error game not found with ID " + gameID);
+        }
+        return game;
     }
 
     @Override
@@ -30,7 +37,10 @@ public class MemoryGameDAO implements GameDAO {
     }
 
     @Override
-    public void updateGame(GameData game) {
+    public void updateGame(GameData game) throws DataAccessException {
+        if (!games.containsKey(game.gameID())) {
+            throw new DataAccessException("Error game ID " + game.gameID() + " does not exist");
+        }
         games.put(game.gameID(), game);
     }
 

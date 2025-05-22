@@ -33,7 +33,7 @@ public class LoginHandler implements Route {
             return gson.toJson(new ErrorResponse("Error unauthorized"));
         } catch (Exception e) {
             res.status(500);
-            return gson.toJson(new ErrorResponse("Internal server error"));
+            return gson.toJson(new ErrorResponse("Error internal server"));
         }
     }
 

@@ -3,8 +3,10 @@ package service;
 import chess.ChessGame;
 import dataaccess.*;
 import model.*;
+import response.ListGamesResponse;
 
 import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 public class GameService {
@@ -26,27 +28,39 @@ public class GameService {
         return game;
     }
 
-    public HashSet<GameData> listGames(String authToken) throws DataAccessException {
+    public ListGamesResponse listGames(String authToken) throws DataAccessException {
         AuthData auth = authDAO.getAuth(authToken);
         if (auth == null) throw new DataAccessException("Unauthorized");
-        return new HashSet<>(gameDAO.listGames(auth.username()));
+        Set<GameData> games = new HashSet<>(gameDAO.listGames(auth.username()));
+        return new ListGamesResponse(games);
     }
 
+
     public void joinGame(String authToken, int gameID, String playerColor) throws DataAccessException {
+        // Validate auth token
         AuthData auth = authDAO.getAuth(authToken);
         if (auth == null) throw new DataAccessException("Unauthorized");
 
+        // Validate game existence
         GameData game = gameDAO.getGame(gameID);
         if (game == null) throw new DataAccessException("Game not found");
 
-        if ("WHITE".equalsIgnoreCase(playerColor)) {
+        // Validate and process player color
+        if (playerColor == null) {
+            // Spectator: do not assign a player color
+            return;
+        } else if ("WHITE".equalsIgnoreCase(playerColor)) {
             if (game.whitePlayer() != null) throw new DataAccessException("White already taken");
             game = new GameData(game.gameID(), auth.username(), game.blackPlayer(), game.gameName(), game.game());
         } else if ("BLACK".equalsIgnoreCase(playerColor)) {
             if (game.blackPlayer() != null) throw new DataAccessException("Black already taken");
             game = new GameData(game.gameID(), game.whitePlayer(), auth.username(), game.gameName(), game.game());
+        } else {
+            // Invalid color
+            throw new DataAccessException("Invalid player color");
         }
 
-        gameDAO.createGame(game);
+        gameDAO.updateGame(game);
     }
+
 }

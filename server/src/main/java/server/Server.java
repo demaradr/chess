@@ -29,7 +29,7 @@ public class Server {
 
         get("/game", new ListGamesHandler(gameService, gson));
         post("/game", new CreateGameHandler(gameService, gson));
-        put("/game", new JoinGameHandler(gameService, gson));
+        put("/game", new JoinGameHandler(gameService, gson, authDAO));
 
         delete("/db", new ClearHandler(userDAO, authDAO, gameDAO));
 
