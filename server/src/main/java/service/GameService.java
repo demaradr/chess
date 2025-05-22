@@ -20,7 +20,9 @@ public class GameService {
 
     public GameData createGame(String authToken, String gameName) throws DataAccessException {
         AuthData auth = authDAO.getAuth(authToken);
-        if (auth == null) throw new DataAccessException("Unauthorized");
+        if (auth == null) {
+            throw new DataAccessException("Unauthorized");
+        }
         int gameID = nextGameID++;
         GameData game = new GameData(gameID, null, null, gameName, new ChessGame());
         gameDAO.createGame(game);

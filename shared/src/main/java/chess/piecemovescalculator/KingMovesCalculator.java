@@ -1,17 +1,17 @@
-package chess.PieceMovesCalculator;
+package chess.piecemovescalculator;
 
 import chess.*;
 import java.util.HashSet;
 
-public class KnightMovesCalculator implements MovesCalculator {
+public class KingMovesCalculator implements MovesCalculator {
     @Override
     public HashSet<ChessMove> getMoves(ChessBoard board, ChessPosition myPosition) {
         HashSet<ChessMove> moves = new HashSet<>();
         int[][] directions = {
-                {-2, 1}, {-2, -1},
-                {2, 1}, {2, -1},
-                {1, 2}, {-1, 2},
-                {-1, -2}, {1, -2}
+                {-1, 0}, {0, 1},
+                {1, 0}, {0, -1},
+                {-1, 1}, {1, 1},
+                {1, -1}, {-1, -1}
         };
 
         for (int[] dir : directions) {

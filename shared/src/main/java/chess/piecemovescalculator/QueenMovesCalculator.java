@@ -1,16 +1,20 @@
-package chess.PieceMovesCalculator;
+package chess.piecemovescalculator;
 
 import chess.*;
 import java.util.HashSet;
-public class RookMovesCalculator implements MovesCalculator{
+
+public class QueenMovesCalculator implements MovesCalculator {
     @Override
     public HashSet<ChessMove> getMoves(ChessBoard board, ChessPosition myPosition) {
         HashSet<ChessMove> moves = new HashSet<>();
-        int [][] directions = {
-                {1, 0}, {0, 1}, {-1, 0}, {0, -1}
+        int[][] directions = {
+                {1, 0}, {0, 1},
+                {-1, 0}, {0, -1},
+                {-1, 1}, {1, 1},
+                {1, -1}, {-1, -1}
         };
 
-        for (int[] dir: directions) {
+        for (int[] dir : directions) {
             int row = myPosition.getRow();
             int col = myPosition.getColumn();
 
@@ -19,7 +23,9 @@ public class RookMovesCalculator implements MovesCalculator{
                 row += dir[0];
                 col += dir[1];
 
-                if (row < 1 || row > 8 || col < 1 || col > 8) break;
+                if (row < 1 || row > 8 || col < 1 || col > 8) {
+                    break;
+                }
 
                 ChessPosition newPos = new ChessPosition(row, col);
                 ChessPiece occupyingPiece = board.getPiece(newPos);
@@ -39,3 +45,4 @@ public class RookMovesCalculator implements MovesCalculator{
         return moves;
     }
 }
+
