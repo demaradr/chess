@@ -33,9 +33,6 @@ public class Server {
 
         delete("/db", new ClearHandler(userDAO, authDAO, gameDAO));
 
-
-
-        // Start the server
         init();
         awaitInitialization();
         return port();

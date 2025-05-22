@@ -1,10 +1,8 @@
 package dataaccess;
 
 import model.GameData;
-
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 
 public class MemoryGameDAO implements GameDAO {
     private final HashMap<Integer, GameData> games = new HashMap<>();
@@ -29,7 +27,7 @@ public class MemoryGameDAO implements GameDAO {
     @Override
     public Collection<GameData> listGames(String username) throws DataAccessException {
         return games.values().stream()
-                .filter(g -> username.equals(g.whitePlayer()) || username.equals(g.blackPlayer()))
+                .filter(g -> username.equals(g.whiteUsername()) || username.equals(g.blackUsername()))
                 .toList();
     }
 
