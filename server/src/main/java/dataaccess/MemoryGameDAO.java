@@ -28,7 +28,9 @@ public class MemoryGameDAO implements GameDAO {
 
     @Override
     public Collection<GameData> listGames(String username) throws DataAccessException {
-        return List.of();
+        return games.values().stream()
+                .filter(g -> username.equals(g.whitePlayer()) || username.equals(g.blackPlayer()))
+                .toList();
     }
 
     @Override

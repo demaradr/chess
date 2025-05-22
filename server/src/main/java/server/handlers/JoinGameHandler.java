@@ -51,11 +51,24 @@ public class JoinGameHandler implements Route {
             return gson.toJson(new SuccessResponse("Successfully joined game"));
 
         } catch (DataAccessException e) {
-            res.status(403);
-            return gson.toJson(new ErrorResponse("Error: " + e.getMessage()));
-        } catch (Exception e) {
-            res.status(500);
+            String message = e.getMessage();
+            if (message != null) {
+                message = message.toLowerCase();
+                if (message.contains("invalid player color")) {
+                    res.status(400);
+                } else if (message.contains("unauthorized")) {
+                    res.status(401);
+                } else if (message.contains("already assigned") || message.contains("already taken")) {
+                    res.status(403);
+                } else if (message.contains("game not found")) {
+                    res.status(400);
+                } else {
+                    res.status(500);
+                }
+            } else {
+                res.status(500);
+            }
             return gson.toJson(new ErrorResponse("Error: " + e.getMessage()));
         }
-    }
-}
+
+    }}
