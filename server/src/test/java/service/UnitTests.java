@@ -23,7 +23,7 @@ public class UnitTests {
     }
 
     @BeforeEach
-    void setup() {
+    void setup() throws DataAccessException {
         userDAO.clear();
         authDAO.clear();
 
