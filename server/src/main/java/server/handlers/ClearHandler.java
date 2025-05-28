@@ -1,9 +1,10 @@
 package server.handlers;
 
+import dataaccess.DataAccessException;
+import dataaccess.*;
 import spark.Request;
 import spark.Response;
 import spark.Route;
-import dataaccess.*;
 
 public class ClearHandler implements Route {
     private final UserDAO userDAO;
@@ -17,11 +18,19 @@ public class ClearHandler implements Route {
     }
 
     @Override
-    public Object handle(Request req, Response res) throws Exception {
-        userDAO.clear();
-        authDAO.clear();
-        gameDAO.clear();
-        res.status(200);
-        return "{}";
+    public Object handle(Request req, Response res) {
+        try {
+            // Clear all database tables
+            userDAO.clear();
+            authDAO.clear();
+            gameDAO.clear();
+
+            res.status(200);
+            return "{}"; // Success response
+        } catch (DataAccessException e) {
+            // Handle database connection error
+            res.status(500);
+            return "{\"error\": \"Internal Server Error: Database access failed\"}";
+        }
     }
 }
