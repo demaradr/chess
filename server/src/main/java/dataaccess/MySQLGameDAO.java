@@ -94,15 +94,7 @@ public class MySQLGameDAO implements GameDAO {
         }
     }
 
-    @Override
-    public void clear() throws DataAccessException {
-        try (var conn = DatabaseManager.getConnection();
-             var statement = conn.prepareStatement("TRUNCATE Game")) {
-            statement.executeUpdate();
-        } catch (SQLException e) {
-            throw new DataAccessException("Error clearing table", e);
-        }
-    }
+
 
 
     private String serializeGame(ChessGame game) {
@@ -124,6 +116,16 @@ public class MySQLGameDAO implements GameDAO {
             }
         } catch (SQLException | DataAccessException e) {
             return false;
+        }
+    }
+
+    @Override
+    public void clear() throws DataAccessException {
+        try (var conn = DatabaseManager.getConnection();
+             var stmt = conn.createStatement()) {
+            stmt.execute("TRUNCATE TABLE game");
+        } catch (SQLException e) {
+            throw new DataAccessException("Error clearing game table", e);
         }
     }
 }

@@ -66,24 +66,21 @@ public class MySQLUserDAO implements UserDAO {
     }
 
     @Override
-    public void clear() throws DataAccessException {
-        try (var conn = DatabaseManager.getConnection();
-             var statement = conn.prepareStatement("TRUNCATE `user`")) {
-            statement.executeUpdate();
-        } catch (SQLException e) {
-            throw new DataAccessException("Error clearing table", e);
-        }
-    }
-
-
-
-
-    @Override
     public void createUser(String username, String password, String email) throws DataAccessException {
         try {
             createUser(new UserData(username, password, email));
         } catch (DataAccessException e) {
             throw e;
+        }
+    }
+
+    @Override
+    public void clear() throws DataAccessException {
+        try (var conn = DatabaseManager.getConnection();
+             var stmt = conn.createStatement()) {
+            stmt.execute("TRUNCATE TABLE `user`");
+        } catch (SQLException e) {
+            throw new DataAccessException("Error clearing auth table", e);
         }
     }
 }
