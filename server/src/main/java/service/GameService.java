@@ -6,28 +6,38 @@ import model.*;
 import response.ListGamesResponse;
 import java.util.Collection;
 import java.util.HashSet;
-
+import java.util.concurrent.ThreadLocalRandom;
 
 public class GameService {
     public GameDAO gameDAO;
     public AuthDAO authDAO;
-    private static int nextGameID = 1;
 
     public GameService(GameDAO gameDAO, AuthDAO authDAO) {
         this.gameDAO = gameDAO;
         this.authDAO = authDAO;
     }
 
-    public GameData createGame(String authToken, String gameName) throws DataAccessException {
-        AuthData auth = authDAO.getAuth(authToken);
-        if (auth == null) {
-            throw new DataAccessException("Unauthorized");
+    public int createGame(String authToken, String gameName) throws DataAccessException {
+        try {
+            authDAO.getAuth(authToken);
+        } catch (DataAccessException e) {
+            throw new DataAccessException(e.getMessage());
         }
-        int gameID = nextGameID++;
-        GameData game = new GameData(gameID, null, null, gameName, new ChessGame());
-        gameDAO.createGame(game);
-        return game;
+
+        int gameID;
+        do { // Get random gameIDs until the gameID is not already in use
+            gameID = ThreadLocalRandom.current().nextInt(1, 10000);
+        } while (gameDAO.gameExists(gameID));
+
+        try {
+            gameDAO.createGame(new GameData(gameID, null, null, gameName, null));
+        } catch (DataAccessException e) {
+            throw new DataAccessException(e.getMessage());
+        }
+
+        return gameID;
     }
+
 
     public ListGamesResponse listGames(String authToken) throws DataAccessException {
         AuthData auth = authDAO.getAuth(authToken);
@@ -38,7 +48,6 @@ public class GameService {
         Collection<GameData> games = gameDAO.listGames();
         return new ListGamesResponse(new HashSet<>(games));
     }
-
 
     public void joinGame(String authToken, int gameID, String playerColor) throws DataAccessException {
         AuthData auth = authDAO.getAuth(authToken);
@@ -52,8 +61,8 @@ public class GameService {
         }
 
         String username = auth.username();
-
         GameData updatedGame;
+
         if ("WHITE".equalsIgnoreCase(playerColor)) {
             if (oldGame.whiteUsername() != null) {
                 throw new DataAccessException("White player already assigned");
@@ -68,11 +77,6 @@ public class GameService {
             throw new DataAccessException("Invalid player color");
         }
 
-
-
         gameDAO.updateGame(updatedGame);
-
     }
-
-
 }

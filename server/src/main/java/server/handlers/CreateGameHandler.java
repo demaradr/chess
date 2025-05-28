@@ -33,7 +33,7 @@ public class CreateGameHandler implements Route {
                 return gson.toJson(new ErrorResponse("Error invalid game name"));
             }
 
-            int gameID = gameService.createGame(authToken, request.gameName()).gameID();
+            int gameID = gameService.createGame(authToken, request.gameName());
 
             res.status(200);
             return gson.toJson(new CreateGameResponse(gameID));

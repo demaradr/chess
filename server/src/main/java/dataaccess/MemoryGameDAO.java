@@ -45,9 +45,13 @@ public class MemoryGameDAO implements GameDAO {
     }
 
     @Override
+    public boolean gameExists(int gameID) {
+        return false;
+    }
+
+    @Override
     public void clear() {
         games.clear();
     }
 }
-
 

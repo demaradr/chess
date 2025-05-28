@@ -1,4 +1,5 @@
 import chess.*;
+import dataaccess.DatabaseManager;
 import server.Server;
 import dataaccess.DatabaseInitializer;
 import dataaccess.DataAccessException;
@@ -9,10 +10,15 @@ public class Main {
         System.out.println("♕ 240 Chess Server: " + piece);
 
         try {
+            // Properties are loaded automatically via static block in DatabaseManager
+            DatabaseManager.createDatabase();
+            System.out.println("Database created successfully.");
+
             DatabaseInitializer.initializeDatabase();
             System.out.println("Database initialized successfully.");
-        } catch (DataAccessException e) {
-            System.err.println("Failed to initialize database: " + e.getMessage());
+
+        } catch (Exception e) {
+            System.err.println("Failed to set up the database: " + e.getMessage());
             e.printStackTrace();
             return;
         }

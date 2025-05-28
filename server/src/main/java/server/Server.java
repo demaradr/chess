@@ -11,14 +11,24 @@ public class Server {
 
     private final Gson gson = new Gson();
 
+    public Server() {
+        try {
+            DatabaseManager.createDatabase();
+        } catch (DataAccessException ex) {
+            System.err.println("Failed to create database: " + ex.getMessage());
+            ex.printStackTrace();
+            throw new RuntimeException(ex);
+        }
+    }
+
     public int run(int desiredPort) {
         Spark.port(desiredPort);
 
         Spark.staticFiles.location("web");
 
-        UserDAO userDAO = new MemoryUserDAO();
-        AuthDAO authDAO = new MemoryAuthDAO();
-        GameDAO gameDAO = new MemoryGameDAO();
+        UserDAO userDAO = new MySQLUserDAO();
+        AuthDAO authDAO = new MySQLAuthDAO();
+        GameDAO gameDAO = new MySQLGameDAO();
 
         UserService userService = new UserService(userDAO, authDAO);
         GameService gameService = new GameService(gameDAO, authDAO);
