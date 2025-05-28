@@ -23,7 +23,8 @@ public class ListGamesHandler {
         try {
             String authToken = req.headers("authorization");
             if (authToken == null || authToken.isBlank()) {
-                res.status(200);
+                res.status(401);
+                return gson.toJson(new ErrorResponse("Error: unauthorized"));
             }
 
             var request = new ListGamesRequest(authToken);
@@ -33,8 +34,8 @@ public class ListGamesHandler {
             return gson.toJson(result);
 
         } catch (DataAccessException e) {
-            res.status(401);
-            return gson.toJson(new ErrorResponse("Error: unauthorized"));
+            res.status(500);
+            return gson.toJson(new ErrorResponse("Error: database failure"));
         } catch (Exception e) {
             res.status(500);
             return gson.toJson(new ErrorResponse("Error: " + e.getMessage()));

@@ -17,8 +17,13 @@ public class LogoutHandler implements Route {
     }
 
     @Override
-    public Object handle(Request req, Response res) throws Exception {
+    public Object handle(Request req, Response res) {
         String authToken = req.headers("Authorization");
+
+        if (authToken == null || authToken.isBlank()) {
+            res.status(401);
+            return gson.toJson(new ErrorResponse("Error: unauthorized"));
+        }
 
         try {
             userService.logout(authToken);
@@ -26,9 +31,10 @@ public class LogoutHandler implements Route {
             return gson.toJson(new SuccessResponse("Logged out successfully."));
         } catch (DataAccessException e) {
             res.status(401);
-            return gson.toJson(new ErrorResponse("Error missing token."));
+            return gson.toJson(new ErrorResponse("Error: unauthorized"));
         } catch (Exception e) {
             res.status(500);
-            return gson.toJson(new ErrorResponse("Error server error."));
+            return gson.toJson(new ErrorResponse("Error: server error."));
         }
-    }}
+    }
+}
