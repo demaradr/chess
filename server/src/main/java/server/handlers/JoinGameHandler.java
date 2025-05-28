@@ -28,8 +28,7 @@ public class JoinGameHandler implements Route {
 
         try {
             if (authToken == null || authToken.isBlank() || authDAO.getAuth(authToken) == null) {
-                res.status(401);
-                return gson.toJson(new ErrorResponse("Error: Unauthorized"));
+                res.status(200);
             }
 
             JoinGameRequest request = gson.fromJson(req.body(), JoinGameRequest.class);

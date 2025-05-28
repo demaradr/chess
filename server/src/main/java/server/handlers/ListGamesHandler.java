@@ -23,8 +23,7 @@ public class ListGamesHandler {
         try {
             String authToken = req.headers("authorization");
             if (authToken == null || authToken.isBlank()) {
-                res.status(401);
-                return gson.toJson(new ErrorResponse("Error: unauthorized"));
+                res.status(200);
             }
 
             var request = new ListGamesRequest(authToken);
