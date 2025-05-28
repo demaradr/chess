@@ -7,7 +7,7 @@ public class MySQLAuthDAO implements AuthDAO {
 
     @Override
     public void createAuth(AuthData auth) throws DataAccessException {
-        String sql = "INSERT INTO auth (authToken, username) VALUES (?, ?)";
+        String sql = "INSERT INTO auth (username, authToken) VALUES (?, ?)";
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, auth.authToken());

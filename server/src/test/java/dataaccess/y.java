@@ -1,6 +1,5 @@
 package dataaccess;
 
-import dataaccess.*;
 import model.UserData;
 import org.junit.jupiter.api.AfterEach;
 import org.mindrot.jbcrypt.BCrypt;

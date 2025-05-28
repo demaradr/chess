@@ -1,6 +1,7 @@
 package server.handlers;
 
 import com.google.gson.Gson;
+import dataaccess.DataAccessException;
 import service.UserService;
 import spark.*;
 import response.ErrorResponse;
@@ -23,10 +24,11 @@ public class LogoutHandler implements Route {
             userService.logout(authToken);
             res.status(200);
             return gson.toJson(new SuccessResponse("Logged out successfully."));
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             res.status(401);
-            return gson.toJson(new ErrorResponse("Error unauthorized"));
+            return gson.toJson(new ErrorResponse("Invalid or missing token."));
+        } catch (Exception e) {
+            res.status(500);
+            return gson.toJson(new ErrorResponse("Internal server error."));
         }
-    }
-
-}
+    }}
