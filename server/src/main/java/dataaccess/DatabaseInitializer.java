@@ -12,7 +12,7 @@ public class DatabaseInitializer {
 
     private static void createUsersTable() throws DataAccessException {
         String sql = """
-                CREATE TABLE IF NOT EXISTS User (
+                CREATE TABLE IF NOT EXISTS `user` (
                     username VARCHAR(255) PRIMARY KEY,
                     password VARCHAR(255) NOT NULL,
                     email VARCHAR(255)
@@ -29,10 +29,10 @@ public class DatabaseInitializer {
 
     private static void createAuthTable() throws DataAccessException {
         String sql = """
-                CREATE TABLE IF NOT EXISTS Auth (
+                CREATE TABLE IF NOT EXISTS auth (
                     authToken VARCHAR(255) PRIMARY KEY,
                     username VARCHAR(255) NOT NULL,
-                    FOREIGN KEY (username) REFERENCES User(username) ON DELETE CASCADE
+                    FOREIGN KEY (username) REFERENCES `user`(username) ON DELETE CASCADE
                 );
                 """;
 
@@ -46,14 +46,14 @@ public class DatabaseInitializer {
 
     private static void createGamesTable() throws DataAccessException {
         String sql = """
-                CREATE TABLE IF NOT EXISTS Game (
+                CREATE TABLE IF NOT EXISTS game (
                     gameID INT PRIMARY KEY AUTO_INCREMENT,
                     gameName VARCHAR(255) NOT NULL,
                     gameState TEXT NOT NULL,  -- Store JSON or FEN here
                     whiteUsername VARCHAR(255),
                     blackUsername VARCHAR(255),
-                    FOREIGN KEY (whiteUsername) REFERENCES User(username) ON DELETE SET NULL,
-                    FOREIGN KEY (blackUsername) REFERENCES User(username) ON DELETE SET NULL
+                    FOREIGN KEY (whiteUsername) REFERENCES `user`(username) ON DELETE SET NULL,
+                    FOREIGN KEY (blackUsername) REFERENCES `user`(username) ON DELETE SET NULL
                 );
                 """;
 

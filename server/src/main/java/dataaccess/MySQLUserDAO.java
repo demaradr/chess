@@ -12,7 +12,7 @@ public class MySQLUserDAO implements UserDAO {
 
     @Override
     public void createUser(UserData user) throws DataAccessException {
-        String sql = "INSERT INTO User (username, password, email) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO `user` (username, password, email) VALUES (?, ?, ?)";
         String hashedPassword = BCrypt.hashpw(user.password(), BCrypt.gensalt());
 
         try (Connection conn = DatabaseManager.getConnection();
@@ -31,7 +31,7 @@ public class MySQLUserDAO implements UserDAO {
 
     @Override
     public UserData getUser(String username) throws DataAccessException {
-        String sql = "SELECT username, password, email FROM User WHERE username = ?";
+        String sql = "SELECT username, password, email FROM `user` WHERE username = ?";
 
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -68,7 +68,7 @@ public class MySQLUserDAO implements UserDAO {
     @Override
     public void clear() throws DataAccessException {
         try (var conn = DatabaseManager.getConnection();
-             var statement = conn.prepareStatement("TRUNCATE User")) {
+             var statement = conn.prepareStatement("TRUNCATE `user`")) {
             statement.executeUpdate();
         } catch (SQLException e) {
             throw new DataAccessException("Error clearing table", e);

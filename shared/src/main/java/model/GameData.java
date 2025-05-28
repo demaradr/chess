@@ -6,5 +6,6 @@ public record GameData(int gameID, String whiteUsername,String blackUsername, St
 
 
     public void setGameID(int generatedID) {
+
     }
 }

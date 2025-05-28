@@ -11,6 +11,22 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class MySQLAuthDAOTest {
 
+    private AuthData getAuthDataFromDB(String username) throws SQLException, DataAccessException {
+        try (var conn = DatabaseManager.getConnection()) {
+            try (var statement = conn.prepareStatement("SELECT username, authToken FROM auth WHERE username=?")) {
+                statement.setString(1, username);
+                try (var results = statement.executeQuery()) {
+                    if (results.next()) {
+                        return new AuthData(results.getString("authToken"), results.getString("username"));
+                    } else {
+                        return null;
+                    }
+                }
+            }
+        }
+    }
+
+
     AuthDAO dao;
 
     AuthData defaultAuth;
@@ -41,28 +57,16 @@ class MySQLAuthDAOTest {
     @Test
     void addAuthPositive() throws DataAccessException, SQLException {
         dao.createAuth(defaultAuth);
-
-        String resultUsername;
-        String resultToken;
-
-        try (var conn = DatabaseManager.getConnection()) {
-            try (var statement = conn.prepareStatement("SELECT username, authToken FROM auth WHERE username=?")) {
-                statement.setString(1, defaultAuth.username());
-                try (var results = statement.executeQuery()) {
-                    results.next();
-                    resultUsername = results.getString("username");
-                    resultToken = results.getString("authToken");
-                }
-            }
-        }
-
-        defaultAuth = new AuthData("token", "username");
+        AuthData result = getAuthDataFromDB(defaultAuth.username());
+        assertNotNull(result);
+        assertEquals(defaultAuth.username(), result.username());
+        assertEquals(defaultAuth.authToken(), result.authToken());
     }
+
 
     @Test
     void addAuthNegative() throws DataAccessException {
         dao.createAuth(defaultAuth);
-
         AuthData secondAuth = new AuthData("username", "token2");
         assertThrows(DataAccessException.class, () -> dao.createAuth(secondAuth));
     }

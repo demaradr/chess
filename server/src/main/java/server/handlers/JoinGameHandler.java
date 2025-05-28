@@ -62,11 +62,14 @@ public class JoinGameHandler implements Route {
                     res.status(403);
                 } else if (message.contains("game not found")) {
                     res.status(400);
+                    return gson.toJson(new ErrorResponse("Error: Game not found"));
                 } else {
                     res.status(500);
+                    return gson.toJson(new ErrorResponse("Error: " + e.getMessage()));
                 }
             } else {
                 res.status(500);
+                return gson.toJson(new ErrorResponse("Error: " + e.getMessage()));
             }
             return gson.toJson(new ErrorResponse("Error: " + e.getMessage()));
         }

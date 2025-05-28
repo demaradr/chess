@@ -7,7 +7,7 @@ public class MySQLAuthDAO implements AuthDAO {
 
     @Override
     public void createAuth(AuthData auth) throws DataAccessException {
-        String sql = "INSERT INTO Auth (authToken, username) VALUES (?, ?)";
+        String sql = "INSERT INTO auth (authToken, username) VALUES (?, ?)";
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, auth.authToken());
@@ -20,7 +20,7 @@ public class MySQLAuthDAO implements AuthDAO {
 
     @Override
     public AuthData getAuth(String authToken) throws DataAccessException {
-        String sql = "SELECT * FROM Auth WHERE authToken = ?";
+        String sql = "SELECT * FROM auth WHERE authToken = ?";
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, authToken);
@@ -38,7 +38,7 @@ public class MySQLAuthDAO implements AuthDAO {
 
     @Override
     public void deleteAuth(String authToken) throws DataAccessException {
-        String sql = "DELETE FROM Auth WHERE authToken = ?";
+        String sql = "DELETE FROM auth WHERE authToken = ?";
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, authToken);
@@ -56,7 +56,7 @@ public class MySQLAuthDAO implements AuthDAO {
     @Override
     public void clear() throws DataAccessException {
         try (var conn = DatabaseManager.getConnection();
-             var statement = conn.prepareStatement("TRUNCATE Auth")) {
+             var statement = conn.prepareStatement("TRUNCATE auth")) {
             statement.executeUpdate();
         } catch (SQLException e) {
             throw new DataAccessException("Error clearing table", e);
