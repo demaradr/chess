@@ -10,8 +10,8 @@ public class MySQLAuthDAO implements AuthDAO {
         String sql = "INSERT INTO auth (username, authToken) VALUES (?, ?)";
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, auth.authToken());
-            stmt.setString(2, auth.username());
+            stmt.setString(1, auth.username());
+            stmt.setString(2, auth.authToken());
             stmt.executeUpdate();
         } catch (SQLException e) {
             throw new DataAccessException("Error creating auth token", e);

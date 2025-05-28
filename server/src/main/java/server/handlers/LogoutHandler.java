@@ -26,9 +26,9 @@ public class LogoutHandler implements Route {
             return gson.toJson(new SuccessResponse("Logged out successfully."));
         } catch (DataAccessException e) {
             res.status(401);
-            return gson.toJson(new ErrorResponse("Invalid or missing token."));
+            return gson.toJson(new ErrorResponse("Error missing token."));
         } catch (Exception e) {
             res.status(500);
-            return gson.toJson(new ErrorResponse("Internal server error."));
+            return gson.toJson(new ErrorResponse("Error server error."));
         }
     }}

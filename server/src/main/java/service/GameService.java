@@ -3,9 +3,7 @@ package service;
 import chess.ChessGame;
 import dataaccess.*;
 import model.*;
-import response.ListGamesResponse;
-import java.util.Collection;
-import java.util.HashSet;
+
 import java.util.concurrent.ThreadLocalRandom;
 
 public class GameService {
@@ -28,22 +26,13 @@ public class GameService {
             gameID = ThreadLocalRandom.current().nextInt(1, 10000);
         } while (gameDAO.gameExists(gameID));
 
-        gameDAO.createGame(new GameData(gameID, null, null, gameName, null));
+        ChessGame chessGame = new ChessGame(); // Add this line
+        gameDAO.createGame(new GameData(gameID, null, null, gameName, chessGame)); // Pass a new ChessGame
 
         return gameID;
     }
 
 
-
-    public ListGamesResponse listGames(String authToken) throws DataAccessException {
-        AuthData auth = authDAO.getAuth(authToken);
-        if (auth == null) {
-            throw new DataAccessException("Unauthorized");
-        }
-
-        Collection<GameData> games = gameDAO.listGames();
-        return new ListGamesResponse(new HashSet<>(games));
-    }
 
     public void joinGame(String authToken, int gameID, String playerColor) throws DataAccessException {
         AuthData auth = authDAO.getAuth(authToken);
@@ -59,12 +48,13 @@ public class GameService {
         String username = auth.username();
         GameData updatedGame;
 
-        if ("WHITE".equalsIgnoreCase(playerColor)) {
+        String color = playerColor == null ? "" : playerColor.trim().toUpperCase();
+        if ("WHITE".equals(color)) {
             if (oldGame.whiteUsername() != null) {
                 throw new DataAccessException("White player already assigned");
             }
             updatedGame = new GameData(oldGame.gameID(), username, oldGame.blackUsername(), oldGame.gameName(), oldGame.game());
-        } else if ("BLACK".equalsIgnoreCase(playerColor)) {
+        } else if ("BLACK".equals(color)) {
             if (oldGame.blackUsername() != null) {
                 throw new DataAccessException("Black player already assigned");
             }

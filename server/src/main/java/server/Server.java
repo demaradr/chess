@@ -37,7 +37,7 @@ public class Server {
         post("/session", new LoginHandler(userService, gson));
         delete("/session", new LogoutHandler(userService, gson));
 
-        get("/game", new ListGamesHandler(gameService, gson));
+        get("/game", new ListGamesHandler(authDAO, gameDAO, gson)::handle);
         post("/game", new CreateGameHandler(gameService, gson));
         put("/game", new JoinGameHandler(gameService, gson, authDAO));
 

@@ -7,13 +7,12 @@ import model.GameData;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 
 public class MySQLGameDAO implements GameDAO {
 
     @Override
-    public HashSet<GameData> listGames() {
-        HashSet<GameData> games = HashSet.newHashSet(16);
+    public HashSet<GameData> listGames() throws DataAccessException {
+        HashSet<GameData> games = new HashSet<>(16);
         try (var conn = DatabaseManager.getConnection()) {
             try (var statement = conn.prepareStatement("SELECT gameID, whiteUsername, blackUsername, gameName, chessGame FROM game")) {
                 try (var results = statement.executeQuery()) {
@@ -27,8 +26,8 @@ public class MySQLGameDAO implements GameDAO {
                     }
                 }
             }
-        } catch (SQLException | DataAccessException e) {
-            return null;
+        } catch (SQLException e) {
+            throw new DataAccessException("Error listing games", e);
         }
         return games;
     }
@@ -36,9 +35,9 @@ public class MySQLGameDAO implements GameDAO {
     @Override
     public void createGame(GameData game) throws DataAccessException {
         try (var conn = DatabaseManager.getConnection()) {
-            try (var statement = conn.prepareStatement("" +
+            try (var statement = conn.prepareStatement(
                     "INSERT INTO game (gameID, whiteUsername, blackUsername, gameName, chessGame) " +
-                    "VALUES(?, ?, ?, ?, ?)")) {
+                            "VALUES(?, ?, ?, ?, ?)")) {
                 statement.setInt(1, game.gameID());
                 statement.setString(2, game.whiteUsername());
                 statement.setString(3, game.blackUsername());
@@ -47,7 +46,7 @@ public class MySQLGameDAO implements GameDAO {
                 statement.executeUpdate();
             }
         } catch (SQLException e) {
-            throw new DataAccessException(e.getMessage());
+            throw new DataAccessException("Error creating game: " + e.getMessage(), e);
         }
     }
 
@@ -57,22 +56,47 @@ public class MySQLGameDAO implements GameDAO {
             try (var statement = conn.prepareStatement("SELECT whiteUsername, blackUsername, gameName, chessGame FROM game WHERE gameID=?")) {
                 statement.setInt(1, gameID);
                 try (var results = statement.executeQuery()) {
-                    results.next();
-                    var whiteUsername = results.getString("whiteUsername");
-                    var blackUsername = results.getString("blackUsername");
-                    var gameName = results.getString("gameName");
-                    var chessGame = deserializeGame(results.getString("chessGame"));
-                    return new GameData(gameID, whiteUsername, blackUsername, gameName, chessGame);
+                    if (results.next()) { // Added proper check for row existence
+                        var whiteUsername = results.getString("whiteUsername");
+                        var blackUsername = results.getString("blackUsername");
+                        var gameName = results.getString("gameName");
+                        var chessGame = deserializeGame(results.getString("chessGame"));
+                        return new GameData(gameID, whiteUsername, blackUsername, gameName, chessGame);
+                    } else {
+                        throw new DataAccessException("Game not found, id: " + gameID);
+                    }
                 }
             }
         } catch (SQLException e) {
-            throw new DataAccessException("Game not found, id: " + gameID);
+            throw new DataAccessException("Error retrieving game: " + e.getMessage(), e);
         }
     }
 
     @Override
     public Collection<GameData> listGames(String username) throws DataAccessException {
-        return List.of();
+        HashSet<GameData> games = new HashSet<>();
+        try (var conn = DatabaseManager.getConnection()) {
+            String sql = "SELECT gameID, whiteUsername, blackUsername, gameName, chessGame " +
+                    "FROM game " +
+                    "WHERE whiteUsername = ? OR blackUsername = ?";
+            try (var statement = conn.prepareStatement(sql)) {
+                statement.setString(1, username);
+                statement.setString(2, username);
+                try (var results = statement.executeQuery()) {
+                    while (results.next()) {
+                        int gameID = results.getInt("gameID");
+                        String whiteUsername = results.getString("whiteUsername");
+                        String blackUsername = results.getString("blackUsername");
+                        String gameName = results.getString("gameName");
+                        ChessGame chessGame = deserializeGame(results.getString("chessGame"));
+                        games.add(new GameData(gameID, whiteUsername, blackUsername, gameName, chessGame));
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException("Error fetching games for user " + username, e);
+        }
+        return games;
     }
 
     @Override
@@ -90,19 +114,8 @@ public class MySQLGameDAO implements GameDAO {
                 }
             }
         } catch (SQLException e) {
-            throw new DataAccessException(e.getMessage());
+            throw new DataAccessException("Error updating game: " + e.getMessage(), e);
         }
-    }
-
-
-
-
-    private String serializeGame(ChessGame game) {
-        return new Gson().toJson(game);
-    }
-
-    private ChessGame deserializeGame(String serializedGame) {
-        return new Gson().fromJson(serializedGame, ChessGame.class);
     }
 
     @Override
@@ -127,5 +140,13 @@ public class MySQLGameDAO implements GameDAO {
         } catch (SQLException e) {
             throw new DataAccessException("Error clearing game table", e);
         }
+    }
+
+    private String serializeGame(ChessGame game) {
+        return new Gson().toJson(game);
+    }
+
+    private ChessGame deserializeGame(String serializedGame) {
+        return new Gson().fromJson(serializedGame, ChessGame.class);
     }
 }
