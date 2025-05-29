@@ -40,9 +40,9 @@ public class Server {
             DatabaseManager.createDatabase();
             connection = DatabaseManager.getConnection();
 
-            authDAO = new MySQLAuthDAO(connection);
-            userDAO = new MySQLUserDAO(connection);
-            gameDAO = new MySQLGameDAO(connection);
+            authDAO = new MySQLAuthDAO();
+            userDAO = new MySQLUserDAO();
+            gameDAO = new MySQLGameDAO();
 
         } catch (DataAccessException e) {
             throw new RuntimeException(e);

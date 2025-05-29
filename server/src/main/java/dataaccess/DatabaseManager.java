@@ -11,7 +11,7 @@ public class DatabaseManager {
     private static String password;
     private static String url;
 
-    private static final String PROPERTIES_FILE = "/db.properties";
+    private static final String DEFAULT_PROPERTIES_FILE = "/db.properties";
     public static final String[] TABLES = {"auth", "games", "users"};
 
     static {
@@ -22,16 +22,7 @@ public class DatabaseManager {
      * Load database properties from the default db.properties file in the classpath.
      */
     private static void loadPropertiesFromResources() {
-        Properties props = new Properties();
-        try (InputStream input = DatabaseManager.class.getResourceAsStream(PROPERTIES_FILE)) {
-            if (input == null) {
-                throw new RuntimeException("Properties file not found: " + PROPERTIES_FILE);
-            }
-            props.load(input);
-            applyProperties(props);
-        } catch (IOException e) {
-            throw new RuntimeException("Error loading properties file: " + e.getMessage(), e);
-        }
+        loadProperties(DEFAULT_PROPERTIES_FILE);
     }
 
     /**
@@ -39,6 +30,23 @@ public class DatabaseManager {
      */
     public static void loadProperties(Properties props) {
         applyProperties(props);
+    }
+
+    /**
+     * Load properties from a specific file path in the classpath.
+     * For example: loadProperties("/test-db.properties")
+     */
+    public static void loadProperties(String filePath) {
+        Properties props = new Properties();
+        try (InputStream input = DatabaseManager.class.getResourceAsStream(filePath)) {
+            if (input == null) {
+                throw new RuntimeException("Error: Properties file not found at " + filePath);
+            }
+            props.load(input);
+            applyProperties(props);
+        } catch (IOException e) {
+            throw new RuntimeException("Error: Failed to load properties file at " + filePath, e);
+        }
     }
 
     /**
@@ -55,7 +63,7 @@ public class DatabaseManager {
             url = String.format("jdbc:mysql://%s:%d", host, port);
 
             if (databaseName == null || user == null || password == null || host == null) {
-                throw new RuntimeException("Missing required database properties.");
+                throw new RuntimeException("Error: Missing required database properties.");
             }
         } catch (Exception ex) {
             throw new RuntimeException("Error processing properties: " + ex.getMessage(), ex);
@@ -71,7 +79,7 @@ public class DatabaseManager {
             conn.setCatalog(databaseName);
             return conn;
         } catch (SQLException e) {
-            throw new DataAccessException(e.getMessage());
+            throw new DataAccessException("Error: " + e.getMessage());
         }
     }
 
@@ -125,7 +133,7 @@ public class DatabaseManager {
             }
 
         } catch (SQLException e) {
-            throw new DataAccessException(e.getMessage());
+            throw new DataAccessException("Error: " + e.getMessage());
         }
     }
 
@@ -141,7 +149,7 @@ public class DatabaseManager {
                 }
             }
         } catch (SQLException e) {
-            throw new DataAccessException(e.getMessage());
+            throw new DataAccessException("Error: " + e.getMessage());
         }
     }
 

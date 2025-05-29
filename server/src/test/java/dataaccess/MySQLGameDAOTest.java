@@ -34,7 +34,7 @@ class SQLGameDAOTest {
         connection = DatabaseManager.getConnection();
         gson = new Gson();
 
-        gameDAO = new MySQLGameDAO(connection);
+        gameDAO = new MySQLGameDAO();
     }
 
     @AfterEach

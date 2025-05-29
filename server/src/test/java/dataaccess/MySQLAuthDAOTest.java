@@ -28,7 +28,7 @@ class MySQLAuthDAOTest {
         connection = DatabaseManager.getConnection();
         saveData = new AuthData(authToken, username);
 
-        authDAO = new MySQLAuthDAO(connection);
+        authDAO = new MySQLAuthDAO();
     }
 
     private void addAuth() throws DataAccessException {

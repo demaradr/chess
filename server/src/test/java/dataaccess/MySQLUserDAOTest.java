@@ -29,7 +29,7 @@ class MySQLUserDAOTest {
 
         DatabaseManager.reset();
 
-        sqlUserDAO = new MySQLUserDAO(connection);
+        sqlUserDAO = new MySQLUserDAO();
     }
 
     private void addUser() throws DataAccessException {
