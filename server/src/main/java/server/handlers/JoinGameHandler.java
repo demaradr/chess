@@ -1,76 +1,28 @@
 package server.handlers;
 
 import com.google.gson.Gson;
-import dataaccess.AuthDAO;
 import dataaccess.DataAccessException;
+
+import dataaccess.AuthDAO;
+import dataaccess.GameDAO;
 import request.JoinGameRequest;
-import response.ErrorResponse;
-import response.SuccessResponse;
-import service.GameService;
+import service.JoinGameService;
 import spark.Request;
 import spark.Response;
-import spark.Route;
 
-public class JoinGameHandler implements Route {
-    private final GameService gameService;
-    private final Gson gson;
-    private final AuthDAO authDAO;
+public class JoinGameHandler {
+    JoinGameService service;
 
-    public JoinGameHandler(GameService gameService, Gson gson, AuthDAO authDAO) {
-        this.gameService = gameService;
-        this.gson = gson;
-        this.authDAO = authDAO;
+    public JoinGameHandler(AuthDAO authDAO, GameDAO gameDAO) {
+
+        service = new JoinGameService(authDAO, gameDAO);
     }
 
-    @Override
-    public Object handle(Request req, Response res) {
-        String authToken = req.headers("Authorization");
+    public String joinGame(Request req, Response res, Gson gson) throws DataAccessException {
+        var body = gson.fromJson(req.body(), JoinGameRequest.class);
+        var joinRequest = new JoinGameRequest(req.headers("authorization"), body.playerColor(), body.gameID());
+        service.joinGame(joinRequest);
 
-        try {
-            if (authToken == null || authToken.isBlank() || authDAO.getAuth(authToken) == null) {
-                res.status(200);
-            }
-
-            JoinGameRequest request = gson.fromJson(req.body(), JoinGameRequest.class);
-
-            if (request == null || request.gameID() == null || request.gameID() <= 0) {
-                res.status(400);
-                return gson.toJson(new ErrorResponse("Error: invalid or missing game ID"));
-            }
-
-            if (request.playerColor() != null &&
-                    !(request.playerColor().equalsIgnoreCase("WHITE") || request.playerColor().equalsIgnoreCase("BLACK"))) {
-                res.status(400);
-                return gson.toJson(new ErrorResponse("Error: invalid player color"));
-            }
-
-            gameService.joinGame(authToken, request.gameID(), request.playerColor());
-
-            res.status(200);
-            return gson.toJson(new SuccessResponse("Successfully joined game"));
-
-        } catch (DataAccessException e) {
-            String message = e.getMessage();
-            if (message != null) {
-                message = message.toLowerCase();
-                if (message.contains("invalid player color")) {
-                    res.status(400);
-                } else if (message.contains("unauthorized")) {
-                    res.status(401);
-                } else if (message.contains("already assigned") || message.contains("already taken")) {
-                    res.status(403);
-                } else if (message.contains("game not found")) {
-                    res.status(400);
-                    return gson.toJson(new ErrorResponse("Error: Game not found"));
-                } else {
-                    res.status(500);
-                    return gson.toJson(new ErrorResponse("Error: " + e.getMessage()));
-                }
-            } else {
-                res.status(500);
-                return gson.toJson(new ErrorResponse("Error: " + e.getMessage()));
-            }
-            return gson.toJson(new ErrorResponse("Error: " + e.getMessage()));
-        }
-
-    }}
+        return "{}";
+    }
+}

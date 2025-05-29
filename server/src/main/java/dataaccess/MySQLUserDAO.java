@@ -1,86 +1,55 @@
 package dataaccess;
 
+import dataaccess.UserDAO;
 import model.UserData;
-import org.mindrot.jbcrypt.BCrypt;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class MySQLUserDAO implements UserDAO {
 
-    @Override
-    public void createUser(UserData user) throws DataAccessException {
-        String sql = "INSERT INTO `user` (username, password, email) VALUES (?, ?, ?)";
-        String hashedPassword = BCrypt.hashpw(user.password(), BCrypt.gensalt());
+    Connection connection;
+    private String tableVal;
 
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, user.username());
-            stmt.setString(2, hashedPassword);
-            stmt.setString(3, user.email());
-
-            stmt.executeUpdate();
-
-        } catch (SQLException e) {
-            throw new DataAccessException("Error creating user", e);
-        }
+    public MySQLUserDAO(Connection connection) {
+        this.connection = connection;
+        tableVal = DatabaseManager.TABLES[DatabaseManager.TableName.Users.ordinal()];
     }
 
     @Override
     public UserData getUser(String username) throws DataAccessException {
-        String sql = "SELECT username, password, email FROM `user` WHERE username = ?";
-
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
+        UserData returnVal = null;
+        String sql = "select username, password, email from " + tableVal + " where username = ?;";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, username);
-            ResultSet rs = stmt.executeQuery();
-
-            if (rs.next()) {
-                return new UserData(
-                        rs.getString("username"),
-                        rs.getString("password"),
-                        rs.getString("email")
-                );
-            } else {
-                return null;
+            var res = stmt.executeQuery();
+            if (res.next()) {
+                String password = res.getString(2);
+                String email = res.getString(3);
+                returnVal = new UserData(username, password, email);
             }
-
         } catch (SQLException e) {
-            throw new DataAccessException("Error getting user", e);
+            throw new DataAccessException(e.getMessage());
         }
+        return returnVal;
     }
 
     @Override
-    public boolean authenticateUser(String username, String password) throws DataAccessException {
-        UserData user = getUser(username);
-
-        if (user == null) {
-            return false;
-        }
-
-        return BCrypt.checkpw(password, user.password());
-    }
-
-    @Override
-    public void createUser(String username, String password, String email) throws DataAccessException {
-        try {
-            createUser(new UserData(username, password, email));
-        } catch (DataAccessException e) {
-            throw e;
+    public void createUser(UserData data) throws DataAccessException {
+        String sql = "INSERT INTO " + tableVal + " (username, password, email) VALUES (?, ?, ?);";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, data.username());
+            stmt.setString(2, data.password());
+            stmt.setString(3, data.email());
+            stmt.executeUpdate();
+        } catch (SQLException ex) {
+            throw new DataAccessException(ex.getMessage());
         }
     }
 
     @Override
     public void clear() throws DataAccessException {
-        try (var conn = DatabaseManager.getConnection();
-             var stmt = conn.createStatement()) {
-            stmt.execute("TRUNCATE TABLE `user`");
-        } catch (SQLException e) {
-            throw new DataAccessException("Error clearing auth table", e);
-        }
+        ClearHelper.clearDB(tableVal, connection);
     }
 }

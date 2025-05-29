@@ -1,45 +1,28 @@
 package server.handlers;
 
 import com.google.gson.Gson;
+import dataaccess.BadRequestException;
 import dataaccess.DataAccessException;
+
+import dataaccess.AuthDAO;
+import dataaccess.GameDAO;
 import request.CreateGameRequest;
-import response.CreateGameResponse;
-import response.ErrorResponse;
-import service.GameService;
-import spark.*;
+import service.CreateGameService;
+import spark.Request;
+import spark.Response;
 
-public class CreateGameHandler implements Route {
-    private final GameService gameService;
-    private final Gson gson;
+public class CreateGameHandler {
+    private CreateGameService service;
 
-    public CreateGameHandler(GameService gameService, Gson gson) {
-        this.gameService = gameService;
-        this.gson = gson;
+    public CreateGameHandler(AuthDAO authDAO, GameDAO gameDAO) {
+        service = new CreateGameService(authDAO, gameDAO);
     }
 
-    @Override
-    public Object handle(Request req, Response res) {
-        String authToken = req.headers("Authorization");
+    public String createGame(Request req, Response res, Gson gson) throws DataAccessException {
+        var body = gson.fromJson(req.body(), CreateGameRequest.class);
+        var createRequest = new CreateGameRequest(req.headers("authorization"), body.gameName());
 
-        try {
-            if (authToken == null || authToken.isBlank()) {
-                res.status(401);
-                return gson.toJson(new ErrorResponse("Error invalid auth token"));
-            }
-
-            CreateGameRequest request = gson.fromJson(req.body(), CreateGameRequest.class);
-            if (request == null || request.gameName() == null || request.gameName().isBlank()) {
-                res.status(400);
-                return gson.toJson(new ErrorResponse("Error invalid game name"));
-            }
-
-            int gameID = gameService.createGame(authToken, request.gameName());
-
-            res.status(200);
-            return gson.toJson(new CreateGameResponse(gameID));
-        } catch (Exception e) {
-            res.status(500);
-            return gson.toJson(new ErrorResponse("Error " + e.getMessage()));
-        }
+        var result = service.createGame(createRequest);
+        return gson.toJson(result);
     }
 }

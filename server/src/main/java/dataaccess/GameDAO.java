@@ -1,14 +1,13 @@
 package dataaccess;
 
 import model.GameData;
+import model.AuthData;
 import java.util.Collection;
 
 public interface GameDAO {
-    void createGame(GameData game) throws DataAccessException;
-    GameData getGame(int gameID) throws DataAccessException;
-    Collection<GameData> listGames(String username) throws DataAccessException;
     Collection<GameData> listGames() throws DataAccessException;
-    void updateGame(GameData game) throws DataAccessException;
-    boolean gameExists(int gameID);
+    int createGame(AuthData auth, String gameName) throws DataAccessException;
+    GameData getGame(AuthData data, int id) throws DataAccessException;
+    void updateGame(GameData data) throws DataAccessException;
     void clear() throws DataAccessException;
 }

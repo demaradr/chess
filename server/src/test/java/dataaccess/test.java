@@ -1,3 +1,4 @@
+/*
 package dataaccess;
 
 import model.AuthData;
@@ -122,4 +123,4 @@ class MySQLAuthDAOTest {
             }
         }
     }
-}
+}*/

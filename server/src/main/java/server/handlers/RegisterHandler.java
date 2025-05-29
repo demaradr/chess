@@ -1,45 +1,30 @@
 package server.handlers;
 
+import dataaccess.AuthDAO;
+import dataaccess.UserDAO;
+import service.RegisterService;
 import com.google.gson.Gson;
 import dataaccess.DataAccessException;
+
+import model.UserData;
 import request.RegisterRequest;
-import spark.*;
-import service.*;
-import response.ErrorResponse;
+import spark.Request;
+import spark.Response;
 
-public class RegisterHandler implements Route {
-    private final UserService userService;
-    private final Gson gson;
+public class RegisterHandler {
+    RegisterService service;
 
-    public RegisterHandler(UserService userService, Gson gson) {
-        this.userService = userService;
-        this.gson = gson;
+    public RegisterHandler(UserDAO userDAO, AuthDAO authDAO) {
+
+        service = new RegisterService(userDAO, authDAO);
     }
 
+    public String register(Request req, Response res, Gson gson) throws DataAccessException {
+        var userData = gson.fromJson(req.body(), UserData.class);
+        var registerRequest = new RegisterRequest(userData);
 
-    @Override
-    public Object handle(Request req, Response res) {
-        try {
-            RegisterRequest request = gson.fromJson(req.body(), RegisterRequest.class);
+        var result = service.register(registerRequest);
+        return gson.toJson(result);
 
-            if (request.username() == null || request.password() == null || request.email() == null ||
-                    request.username().isBlank() || request.password().isBlank() || request.email().isBlank()) {
-                res.status(400);
-                return gson.toJson(new ErrorResponse("Error required fields missing"));
-            }
-            var userData = new model.UserData(request.username(), request.password(), request.email());
-            var result = userService.register(userData);
-
-            res.status(200);
-            return gson.toJson(result);
-
-        } catch (DataAccessException e) {
-            res.status(403);
-            return gson.toJson(new ErrorResponse("Error username already taken"));
-        } catch (Exception e) {
-            res.status(500);
-            return gson.toJson(new ErrorResponse("Error internal server"));
-        }
     }
 }
-

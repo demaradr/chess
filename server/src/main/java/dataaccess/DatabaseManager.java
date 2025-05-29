@@ -1,77 +1,154 @@
 package dataaccess;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.sql.*;
 import java.util.Properties;
 
 public class DatabaseManager {
     private static String databaseName;
-    private static String dbUsername;
-    private static String dbPassword;
-    private static String connectionUrl;
+    private static String user;
+    private static String password;
+    private static String url;
 
-    /*
-     * Load the database information for the db.properties file.
-     */
+    private static final String PROPERTIES_FILE = "/db.properties";
+    public static final String[] TABLES = {"auth", "games", "users"};
+
+    // Load default properties at class load time
     static {
         loadPropertiesFromResources();
     }
 
     /**
-     * Creates the database if it does not already exist.
+     * Load database properties from the default db.properties file in the classpath.
      */
-    static public void createDatabase() throws DataAccessException {
-        var statement = "CREATE DATABASE IF NOT EXISTS " + databaseName;
-        try (var conn = DriverManager.getConnection(connectionUrl, dbUsername, dbPassword);
-             var preparedStatement = conn.prepareStatement(statement)) {
-            preparedStatement.executeUpdate();
-        } catch (SQLException ex) {
-            throw new DataAccessException("failed to create database", ex);
+    private static void loadPropertiesFromResources() {
+        Properties props = new Properties();
+        try (InputStream input = DatabaseManager.class.getResourceAsStream(PROPERTIES_FILE)) {
+            if (input == null) {
+                throw new RuntimeException("Properties file not found: " + PROPERTIES_FILE);
+            }
+            props.load(input);
+            applyProperties(props);
+        } catch (IOException e) {
+            throw new RuntimeException("Error loading properties file: " + e.getMessage(), e);
         }
     }
 
     /**
-     * Create a connection to the database and sets the catalog based upon the
-     * properties specified in db.properties. Connections to the database should
-     * be short-lived, and you must close the connection when you are done with it.
-     * The easiest way to do that is with a try-with-resource block.
-     * <br/>
-     * <code>
-     * try (var conn = DatabaseManager.getConnection()) {
-     * // execute SQL statements.
-     * }
-     * </code>
+     * Allows overriding the properties programmatically (e.g., for testing).
      */
-    static Connection getConnection() throws DataAccessException {
+    public static void loadProperties(Properties props) {
+        applyProperties(props);
+    }
+
+    /**
+     * Helper method to apply properties to static fields.
+     */
+    private static void applyProperties(Properties props) {
         try {
-            //do not wrap the following line with a try-with-resources
-            var conn = DriverManager.getConnection(connectionUrl, dbUsername, dbPassword);
+            databaseName = props.getProperty("db.name");
+            user = props.getProperty("db.user");
+            password = props.getProperty("db.password");
+
+            var host = props.getProperty("db.host");
+            var port = Integer.parseInt(props.getProperty("db.port"));
+            url = String.format("jdbc:mysql://%s:%d", host, port);
+
+            if (databaseName == null || user == null || password == null || host == null) {
+                throw new RuntimeException("Missing required database properties.");
+            }
+        } catch (Exception ex) {
+            throw new RuntimeException("Error processing properties: " + ex.getMessage(), ex);
+        }
+    }
+
+    /**
+     * Get a connection to the database.
+     */
+    public static Connection getConnection() throws DataAccessException {
+        try {
+            var conn = DriverManager.getConnection(url, user, password);
             conn.setCatalog(databaseName);
             return conn;
-        } catch (SQLException ex) {
-            throw new DataAccessException("failed to get connection", ex);
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
         }
     }
 
-    private static void loadPropertiesFromResources() {
-        try (var propStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("db.properties")) {
-            if (propStream == null) {
-                throw new Exception("Unable to load db.properties");
+    /**
+     * Create the database and tables if they don't exist.
+     */
+    public static void createDatabase() throws DataAccessException {
+        try (var conn = DriverManager.getConnection(url, user, password)) {
+            var statement = "CREATE DATABASE IF NOT EXISTS " + databaseName;
+            try (var preparedStatement = conn.prepareStatement(statement)) {
+                preparedStatement.executeUpdate();
             }
-            Properties props = new Properties();
-            props.load(propStream);
-            loadProperties(props);
-        } catch (Exception ex) {
-            throw new RuntimeException("unable to process db.properties", ex);
+
+            statement = "USE " + databaseName;
+            try (var preparedStatement = conn.prepareStatement(statement)) {
+                preparedStatement.executeUpdate();
+            }
+
+            statement = """
+                    CREATE TABLE IF NOT EXISTS games (
+                       id INT NOT NULL AUTO_INCREMENT,
+                       whiteUsername VARCHAR(255),
+                       blackUsername VARCHAR(255),
+                       gameName VARCHAR(255) NOT NULL,
+                       chessGame LONGTEXT NOT NULL,
+                       PRIMARY KEY (id)
+                    );""";
+            try (var preparedStatement = conn.prepareStatement(statement)) {
+                preparedStatement.executeUpdate();
+            }
+
+            statement = """
+                    CREATE TABLE IF NOT EXISTS auth (
+                       authToken VARCHAR(255) NOT NULL,
+                       username VARCHAR(255) NOT NULL,
+                       PRIMARY KEY (authToken)
+                    );""";
+            try (var preparedStatement = conn.prepareStatement(statement)) {
+                preparedStatement.executeUpdate();
+            }
+
+            statement = """
+                    CREATE TABLE IF NOT EXISTS users (
+                       username VARCHAR(255) NOT NULL,
+                       password VARCHAR(255) NOT NULL,
+                       email VARCHAR(255) NOT NULL,
+                       PRIMARY KEY (username)
+                    );""";
+            try (var preparedStatement = conn.prepareStatement(statement)) {
+                preparedStatement.executeUpdate();
+            }
+
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
         }
     }
 
-    public static void loadProperties(Properties props) {
-        databaseName = props.getProperty("db.name");
-        dbUsername = props.getProperty("db.user");
-        dbPassword = props.getProperty("db.password");
+    /**
+     * Reset the database by truncating all tables.
+     */
+    public static void reset() throws DataAccessException {
+        try (var connection = getConnection()) {
+            for (var table : TABLES) {
+                String sql = "TRUNCATE TABLE " + table + ";";
+                try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+                    stmt.executeUpdate();
+                }
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
+        }
+    }
 
-        var host = props.getProperty("db.host");
-        var port = Integer.parseInt(props.getProperty("db.port"));
-        connectionUrl = String.format("jdbc:mysql://%s:%d", host, port);
+    public enum TableName {
+        Auth,
+        Games,
+        Users
     }
 }

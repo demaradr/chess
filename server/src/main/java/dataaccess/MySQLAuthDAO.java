@@ -5,65 +5,62 @@ import java.sql.*;
 
 public class MySQLAuthDAO implements AuthDAO {
 
-    @Override
-    public void createAuth(AuthData auth) throws DataAccessException {
-        String sql = "INSERT INTO auth (username, authToken) VALUES (?, ?)";
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, auth.username());
-            stmt.setString(2, auth.authToken());
-            stmt.executeUpdate();
-        } catch (SQLException e) {
-            throw new DataAccessException("Error creating auth token", e);
-        }
+    Connection connection;
+    private String tableVal;
+
+    public MySQLAuthDAO(Connection connection) {
+        this.connection = connection;
+        tableVal = DatabaseManager.TABLES[DatabaseManager.TableName.Auth.ordinal()];
     }
 
     @Override
-    public AuthData getAuth(String authToken) throws DataAccessException {
-        String sql = "SELECT * FROM auth WHERE authToken = ?";
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+    public void createAuth(AuthData data) throws DataAccessException {
+        String sql = "INSERT INTO " + tableVal + " (authToken, username) VALUES (?, ?);";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, data.authToken());
+            stmt.setString(2, data.username());
+            stmt.executeUpdate();
+        } catch (SQLException ex) {
+            throw new DataAccessException(ex.getMessage());
+        }
+
+    }
+
+    @Override
+    public AuthData authenticate(String authToken) throws DataAccessException {
+        AuthData returnVal = null;
+        String sql = "select authToken, username from " + tableVal + " where authToken = ?;";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, authToken);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    String username = rs.getString("username");
-                    return new AuthData(authToken, username);
-                }
-                return null;
+            var res = stmt.executeQuery();
+            if (res.next()) {
+                String auth = res.getString(1);
+                String username = res.getString(2);
+                returnVal = new AuthData(auth, username);
             }
         } catch (SQLException e) {
-            throw new DataAccessException("Error retrieving auth token", e);
+            throw new DataAccessException(e.getMessage());
         }
+        if (returnVal == null) {
+            throw new UnauthorizedException("Error: unauthorized");
+        }
+        return returnVal;
+
     }
 
     @Override
-    public void deleteAuth(String authToken) throws DataAccessException {
-        String sql = "DELETE FROM auth WHERE authToken = ?";
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, authToken);
+    public void deleteAuth(AuthData data) throws DataAccessException {
+        String sql = "delete from " + tableVal + " where authToken = ?;";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, data.authToken());
             stmt.executeUpdate();
         } catch (SQLException e) {
-            throw new DataAccessException("Error deleting auth token", e);
+            throw new DataAccessException(e.getMessage());
         }
-    }
-
-    @Override
-    public void createAuth(String username, String token) throws DataAccessException {
-        createAuth(new AuthData(token, username));
     }
 
     @Override
     public void clear() throws DataAccessException {
-        try (var conn = DatabaseManager.getConnection();
-             var stmt = conn.createStatement()) {
-            stmt.execute("TRUNCATE TABLE auth");
-        } catch (SQLException e) {
-            throw new DataAccessException("Error clearing auth table", e);
-        }
+        ClearHelper.clearDB(tableVal, connection);
     }
-
-
-
 }
-

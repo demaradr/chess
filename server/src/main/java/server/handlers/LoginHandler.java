@@ -1,41 +1,26 @@
 package server.handlers;
 
+import dataaccess.AuthDAO;
+import dataaccess.UserDAO;
+import service.LoginService;
 import com.google.gson.Gson;
 import dataaccess.DataAccessException;
-import spark.*;
-import service.*;
+
 import request.LoginRequest;
-import response.ErrorResponse;
+import spark.Request;
+import spark.Response;
 
-public class LoginHandler implements Route {
-    private final UserService userService;
-    private final Gson gson;
+public class LoginHandler {
+    LoginService service;
 
-    public LoginHandler(UserService userService, Gson gson) {
-        this.userService = userService;
-        this.gson = gson;
+    public LoginHandler(UserDAO userDAO, AuthDAO authDAO) {
+
+        service = new LoginService(userDAO, authDAO);
     }
 
-    @Override
-    public Object handle(Request req, Response res) {
-        try {
-            LoginRequest request = gson.fromJson(req.body(), LoginRequest.class);
-            if (request.username() == null || request.password() == null ||
-                    request.username().isBlank() || request.password().isBlank()) {
-                res.status(400);
-                return gson.toJson(new ErrorResponse("Error missing username or password"));
-            }
-            var result = userService.login(request.username(), request.password());
-            res.status(200);
-            return gson.toJson(result);
-        } catch (DataAccessException e) {
-            res.status(401);
-            return gson.toJson(new ErrorResponse("Error unauthorized"));
-        } catch (Exception e) {
-            res.status(500);
-            return gson.toJson(new ErrorResponse("Error internal server"));
-        }
+    public String login(Request req, Response res, Gson gson) throws DataAccessException {
+        var loginRequest = gson.fromJson(req.body(), LoginRequest.class);
+        var result = service.login(loginRequest);
+        return gson.toJson(result);
     }
-
 }
-
