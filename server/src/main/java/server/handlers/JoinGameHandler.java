@@ -2,7 +2,6 @@ package server.handlers;
 
 import com.google.gson.Gson;
 import dataaccess.DataAccessException;
-
 import dataaccess.AuthDAO;
 import dataaccess.GameDAO;
 import request.JoinGameRequest;

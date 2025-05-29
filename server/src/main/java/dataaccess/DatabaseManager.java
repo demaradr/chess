@@ -14,7 +14,6 @@ public class DatabaseManager {
     private static final String PROPERTIES_FILE = "/db.properties";
     public static final String[] TABLES = {"auth", "games", "users"};
 
-    // Load default properties at class load time
     static {
         loadPropertiesFromResources();
     }

@@ -5,7 +5,6 @@ import dataaccess.GameDAO;
 import dataaccess.UserDAO;
 import service.ClearService;
 import dataaccess.DataAccessException;
-
 import spark.Request;
 import spark.Response;
 

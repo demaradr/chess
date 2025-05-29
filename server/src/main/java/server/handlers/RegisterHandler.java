@@ -5,7 +5,6 @@ import dataaccess.UserDAO;
 import service.RegisterService;
 import com.google.gson.Gson;
 import dataaccess.DataAccessException;
-
 import model.UserData;
 import request.RegisterRequest;
 import spark.Request;

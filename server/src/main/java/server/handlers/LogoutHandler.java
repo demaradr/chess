@@ -3,7 +3,6 @@ package server.handlers;
 import dataaccess.AuthDAO;
 import service.LogoutService;
 import dataaccess.DataAccessException;
-
 import request.LogoutRequest;
 import spark.Request;
 import spark.Response;

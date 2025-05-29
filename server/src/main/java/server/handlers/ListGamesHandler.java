@@ -5,7 +5,6 @@ import dataaccess.GameDAO;
 import service.ListGamesService;
 import com.google.gson.Gson;
 import dataaccess.DataAccessException;
-
 import request.ListGamesRequest;
 import spark.Request;
 import spark.Response;
