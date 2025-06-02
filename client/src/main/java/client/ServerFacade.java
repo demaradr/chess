@@ -3,6 +3,9 @@ package client;
 import com.google.gson.Gson;
 import java.io.*;
 import java.net.*;
+import model.UserData;
+import request.*;
+import response.*;
 
 public class ServerFacade {
 
@@ -13,6 +16,13 @@ public class ServerFacade {
         this.serverUrl = url;
     }
 
+    public void register(UserData request) throws ResultException {
+        sendRequest("POST", "/user", request, RegisterResponse.class, null);
+    }
+
+    public LoginResponse login(UserData request) throws ResultException {
+        return sendRequest("POST", "/session", request, LoginResponse.class, null);
+    }
 
     // Generic request handler
     private <T> T sendRequest(String method, String path, Object requestBody, Class<T> responseClass, String authToken) throws ResultException {

@@ -61,5 +61,30 @@ public class CommandInterpreter {
             case "quit" -> "Quitting client. Goodbye.";
             default -> throw new ResultException(400, "Unknown command: " + input);
         };
+    }
+
+    private String handleLoggedInCommand(String input) throws ResultException {
+        String[] args = input.trim().split(" ");
+        return switch (args[0]) {
+            case "help" -> getLoggedInHelp();
+            case "list" -> listGames();
+            case "create" -> {
+                requireArgs(args, 2);
+                facade.createGame(new CreateGameRequest(authToken, args[1]));
+                yield "Created game: " + args[1];
+            }
+            case "join" -> joinGame(args);
+            case "observe" -> observeGame(args);
+            case "logout" -> {
+                facade.logout(authToken);
+                loggedIn = false;
+                username = LOGGED_OUT;
+                authToken = "";
+                yield "Logged out successfully.";
+            }
+            case "quit" -> throw new ResultException(400, "Error: Must log out before quitting.");
+            default -> throw new ResultException(400, "Unknown command: " + input);
+        };
+    }
 
 }}
