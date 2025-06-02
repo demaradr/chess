@@ -24,7 +24,22 @@ public class ServerFacade {
         return sendRequest("POST", "/session", request, LoginResponse.class, null);
     }
 
-    // Generic request handler
+    public void createGame(CreateGameRequest request) throws ResultException {
+        sendRequest("POST", "/game", request, CreateGameResponse.class, request.authToken());
+    }
+
+    public void joinGame(JoinGameRequest request) throws ResultException {
+        sendRequest("PUT", "/game", request, Object.class, request.authToken());
+    }
+
+    public void logout(String authToken) throws ResultException {
+        sendRequest("DELETE", "/session", null, Object.class, authToken);
+    }
+
+    public ListGamesResponse listGames(ListGamesRequest request) throws ResultException {
+        return sendRequest("GET", "/game", null, ListGamesResponse.class, request.authToken());
+    }
+
     private <T> T sendRequest(String method, String path, Object requestBody, Class<T> responseClass, String authToken) throws ResultException {
         HttpURLConnection connection = null;
         try {
@@ -70,7 +85,7 @@ public class ServerFacade {
 
     private void validateResponse(HttpURLConnection connection) throws IOException, ResultException {
         int status = connection.getResponseCode();
-        if (status / 100 != 2) { // not a 2xx response
+        if (status / 100 != 2) {
             try (InputStream errorStream = connection.getErrorStream()) {
                 if (errorStream != null) {
                     throw ResultException.fromJson(errorStream, status);
