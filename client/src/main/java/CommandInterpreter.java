@@ -87,4 +87,23 @@ public class CommandInterpreter {
         };
     }
 
-}}
+    private String listGames() throws ResultException {
+        var response = facade.listGames(new ListGamesRequest(authToken));
+        gameIDList = new ArrayList<>();
+        StringBuilder builder = new StringBuilder("Current Games:");
+
+        int index = 1;
+        for (var game : response.games()) {
+            gameIDList.add(game.gameID());
+            appendGameInfo(game, builder, index++);
+        }
+        return builder.toString();
+    }
+
+    private String joinGame(String[] args) throws ResultException {
+        requireArgs(args, 3);
+        int gameID = getGameIdFromList(args[1]);
+        ChessGame.TeamColor color = parseColor(args[2]);
+        facade.joinGame(new JoinGameRequest(authToken, color.name(), gameID));
+        return drawBoard(new ChessGame(), color);
+    }}
