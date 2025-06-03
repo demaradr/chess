@@ -2,7 +2,9 @@ import chess.*;
 import client.ResultException;
 import client.ServerFacade;
 import model.*;
+import request.*;
 import ui.EscapeSequences;
+import java.util.ArrayList;
 import java.util.Scanner;
 
 public class CommandInterpreter {
@@ -106,4 +108,28 @@ public class CommandInterpreter {
         ChessGame.TeamColor color = parseColor(args[2]);
         facade.joinGame(new JoinGameRequest(authToken, color.name(), gameID));
         return drawBoard(new ChessGame(), color);
-    }}
+    }
+
+    private String observeGame(String[] args) throws ResultException {
+        requireArgs(args, 2);
+        int gameID = getGameIdFromList(args[1]);
+        return drawBoard(new ChessGame(), ChessGame.TeamColor.WHITE);
+    }
+
+    private String drawBoard(ChessGame game, ChessGame.TeamColor playerColor) {
+        StringBuilder builder = new StringBuilder();
+        ChessBoard board = game.getBoard();
+
+        builder.append(playerColor == ChessGame.TeamColor.BLACK ? BLACK_COLS : WHITE_COLS).append("\n");
+        int step = (playerColor == ChessGame.TeamColor.BLACK) ? 1 : -1;
+        int startRow = (playerColor == ChessGame.TeamColor.BLACK) ? 1 : 8;
+        int endRow = (playerColor == ChessGame.TeamColor.BLACK) ? 8 : 1;
+
+        for (int i = startRow; i != endRow + step; i += step) {
+            printRow(board, i, builder);
+        }
+
+        builder.append(playerColor == ChessGame.TeamColor.BLACK ? BLACK_COLS : WHITE_COLS);
+        return builder.toString();
+    }
+}
