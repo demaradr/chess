@@ -116,6 +116,35 @@ public class CommandInterpreter {
         return drawBoard(new ChessGame(), ChessGame.TeamColor.WHITE);
     }
 
+    private static void appendGameInfo(GameData game, StringBuilder builder, int index) {
+        builder.append("\n").append(EscapeSequences.SET_TEXT_BOLD_AND_BLUE)
+                .append(index).append(" - ").append(game.gameName())
+                .append(EscapeSequences.RESET_TEXT_BOLD_FAINT);
+
+        builder.append(game.whiteUsername() == null ? "\n  White: (unclaimed)" : "\n  White: " + game.whiteUsername());
+        builder.append(game.blackUsername() == null ? "\n  Black: (unclaimed)" : "\n  Black: " + game.blackUsername());
+    }
+
+    private int getGameIdFromList(String input) throws ResultException {
+        try {
+            int index = Integer.parseInt(input) - 1;
+            if (index < 0 || index >= gameIDList.size()) {
+                throw new ResultException(400, "Invalid game ID. Use 'list' to see games.");
+            }
+            return gameIDList.get(index);
+        } catch (NumberFormatException e) {
+            throw new ResultException(400, "Game ID must be a number.");
+        }
+    }
+
+    private ChessGame.TeamColor parseColor(String colorStr) throws ResultException {
+        return switch (colorStr.toUpperCase()) {
+            case "WHITE" -> ChessGame.TeamColor.WHITE;
+            case "BLACK" -> ChessGame.TeamColor.BLACK;
+            default -> throw new ResultException(400, "Invalid color. Use WHITE or BLACK.");
+        };
+    }
+
     private String drawBoard(ChessGame game, ChessGame.TeamColor playerColor) {
         StringBuilder builder = new StringBuilder();
         ChessBoard board = game.getBoard();
