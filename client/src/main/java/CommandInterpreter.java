@@ -15,10 +15,12 @@ public class CommandInterpreter {
     private final ServerFacade facade;
     private boolean loggedIn;
     private String username;
-
+    private String authToken;
+    private ArrayList<Integer> gameIDList;
 
     public CommandInterpreter(ServerFacade facade) {
         this.facade = facade;
+        this.gameIDList = new ArrayList<>();
         this.loggedIn = false;
         this.username = LOGGED_OUT;
     }
@@ -188,4 +190,44 @@ public class CommandInterpreter {
             case PAWN -> piece.getTeamColor() == ChessGame.TeamColor.WHITE ? EscapeSequences.WHITE_PAWN : EscapeSequences.BLACK_PAWN;
         } + EscapeSequences.RESET_TEXT_BOLD_FAINT;
     }
+
+
+    private void printError(ResultException ex) {
+        String message = switch (ex.statusCode()) {
+            case 400 -> ex.getMessage();
+            case 401 -> "Error: Unauthorized.";
+            case 403 -> "Error: Already taken.";
+            default -> "Internal server error.";
+        };
+        System.out.println(EscapeSequences.SET_TEXT_COLOR_RED + message);
+    }
+
+    private void requireArgs(String[] args, int expected) throws ResultException {
+        if (args.length != expected) {
+            throw new ResultException(400, "Expected " + (expected - 1) + " arguments.");
+        }
+    }
+
+    private String getLoggedOutHelp() {
+        return """
+                Logged out commands:
+                \t\033[34;1mhelp\033[0m - Show this help.
+                \t\033[34;1mlogin <username> <password>\033[0m - Log in.
+                \t\033[34;1mregister <username> <password> <email>\033[0m - Register a new user.
+                \t\033[34;1mquit\033[0m - Exit the client.
+                """;
+    }
+
+    private String getLoggedInHelp() {
+        return """
+                Logged in commands:
+                \t\033[34;1mhelp\033[0m - Show this help.
+                \t\033[34;1mlist\033[0m - List available games.
+                \t\033[34;1mcreate <gameName>\033[0m - Create a new game.
+                \t\033[34;1mjoin <gameID> <WHITE|BLACK>\033[0m - Join a game.
+                \t\033[34;1mobserve <gameID>\033[0m - Observe a game.
+                \t\033[34;1mlogout\033[0m - Log out.
+                """;
+    }
+
 }
