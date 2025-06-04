@@ -176,7 +176,9 @@ public class CommandInterpreter {
     }
 
     private String formatPiece(ChessPiece piece) {
-        if (piece == null) return EscapeSequences.EMPTY;
+        if (piece == null) {
+            return EscapeSequences.EMPTY;
+        }
         String colorCode = piece.getTeamColor() == ChessGame.TeamColor.WHITE
                 ? EscapeSequences.SET_TEXT_COLOR_WHITE + EscapeSequences.SET_TEXT_BOLD
                 : EscapeSequences.SET_TEXT_COLOR_BLACK;

@@ -10,7 +10,7 @@ import org.mindrot.jbcrypt.BCrypt;
 import server.Server;
 
 import static org.junit.jupiter.api.Assertions.*;
-import client.*;
+
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class ServerFacadeTests {
@@ -52,7 +52,7 @@ public class ServerFacadeTests {
     }
 
     @Test
-    void register_duplicateUser_fails() {
+    void registerDuplicateUserFails() {
         UserData user = new UserData("test_user", "pass", "test.com");
         assertDoesNotThrow(() -> facade.register(user));
         ResultException e = assertThrows(ResultException.class, () -> facade.register(user));
@@ -60,7 +60,7 @@ public class ServerFacadeTests {
     }
 
     @Test
-    void login_validCredentials_succeeds() throws DataAccessException {
+    void loginValidCredentialsSucceeds() throws DataAccessException {
         String username = "test_user";
         String password = "pass";
         String email = "test.com";
@@ -72,7 +72,7 @@ public class ServerFacadeTests {
     }
 
     @Test
-    void login_invalidCredentials_fails() throws DataAccessException {
+    void loginInvalidCredentialsFails() throws DataAccessException {
         String username = "test_user";
         String password = "pass";
         String email = "test.com";
@@ -85,46 +85,46 @@ public class ServerFacadeTests {
     }
 
     @Test
-    void logout_validAuthToken_succeeds() throws DataAccessException {
+    void logoutValidAuthTokenSucceeds() throws DataAccessException {
         String token = "abc123";
         authDAO.createAuth(new AuthData(token, "test_user"));
         assertDoesNotThrow(() -> facade.logout(token));
     }
 
     @Test
-    void logout_invalidAuthToken_fails() {
+    void logoutInvalidAuthTokenFails() {
         ResultException e = assertThrows(ResultException.class, () -> facade.logout("invalidToken"));
         assertEquals(401, e.statusCode());
     }
 
     @Test
-    void listGames_validAuthToken_succeeds() throws DataAccessException {
+    void listGamesValidAuthTokenSucceeds() throws DataAccessException {
         String token = "abc123";
         authDAO.createAuth(new AuthData(token, "test_user"));
         assertDoesNotThrow(() -> facade.listGames(new ListGamesRequest(token)));
     }
 
     @Test
-    void listGames_invalidAuthToken_fails() {
+    void listGamesInvalidAuthTokenFails() {
         ResultException e = assertThrows(ResultException.class, () -> facade.listGames(new ListGamesRequest("invalidToken")));
         assertEquals(401, e.statusCode());
     }
 
     @Test
-    void createGame_validAuthToken_succeeds() throws DataAccessException {
+    void createGameValidAuthTokenSucceeds() throws DataAccessException {
         String token = "abc123";
         authDAO.createAuth(new AuthData(token, "test_user"));
         assertDoesNotThrow(() -> facade.createGame(new CreateGameRequest(token, "Test Game")));
     }
 
     @Test
-    void createGame_invalidAuthToken_fails() {
+    void createGameInvalidAuthTokenFails() {
         ResultException e = assertThrows(ResultException.class, () -> facade.createGame(new CreateGameRequest("invalidToken", "Test Game")));
         assertEquals(401, e.statusCode());
     }
 
     @Test
-    void joinGame_validAuthToken_succeeds() throws DataAccessException {
+    void joinGameValidAuthTokenSucceeds() throws DataAccessException {
         String token = "abc123";
         String username = "test_user";
         String gameName = "test_game";
@@ -138,13 +138,13 @@ public class ServerFacadeTests {
     }
 
     @Test
-    void joinGame_invalidAuthToken_fails() {
+    void joinGameInvalidAuthTokenFails() {
         ResultException e = assertThrows(ResultException.class, () -> facade.joinGame(new JoinGameRequest("invalidToken", "WHITE", 1)));
         assertEquals(401, e.statusCode());
     }
 
     @Test
-    void joinGame_spotTaken_fails() throws DataAccessException {
+    void joinGameSpotTakenFails() throws DataAccessException {
         String token = "abc123";
         String username = "test_user";
         String gameName = "test_game";
