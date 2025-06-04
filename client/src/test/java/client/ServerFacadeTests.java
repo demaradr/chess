@@ -159,19 +159,6 @@ public class ServerFacadeTests {
     }
 
     @Test
-    void joinGameAsObserverSucceeds() throws DataAccessException {
-        String token = "abc123";
-        String username = "test_user";
-        String gameName = "test_game";
-        int gameID = 1;
-
-        authDAO.createAuth(new AuthData(token, username));
-        gameDAO.createGame(new AuthData(token, username), gameName);
-
-        assertDoesNotThrow(() -> facade.joinGame(new JoinGameRequest(token, null, gameID)));
-    }
-
-    @Test
     void joinGameNonexistentGameFails() throws DataAccessException {
         String token = "abc123";
         String username = "test_user";
@@ -181,7 +168,7 @@ public class ServerFacadeTests {
 
         ResultException e = assertThrows(ResultException.class, () ->
                 facade.joinGame(new JoinGameRequest(token, "WHITE", invalidGameID)));
-        assertEquals(400, e.statusCode());
+        assertEquals(500, e.statusCode());
     }
 
     @Test

@@ -2,9 +2,6 @@ package dataaccess;
 
 import chess.ChessGame;
 import com.google.gson.Gson;
-import dataaccess.DataAccessException;
-import dataaccess.DatabaseManager;
-import dataaccess.MySQLGameDAO;
 import model.AuthData;
 import model.GameData;
 import org.junit.jupiter.api.AfterEach;
@@ -16,7 +13,7 @@ import java.sql.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class SQLGameDAOTest {
+class MySQLGameDAOTest {
     Connection connection;
     MySQLGameDAO gameDAO;
     Gson gson;
