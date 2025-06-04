@@ -46,7 +46,7 @@ public class ServerFacadeTests {
     }
 
     @Test
-    void register_validUser_succeeds() {
+    void registerValidUserSucceeds() {
         UserData user = new UserData("test_user", "pass", "test.com");
         assertDoesNotThrow(() -> facade.register(user));
     }
