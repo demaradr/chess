@@ -157,4 +157,46 @@ public class ServerFacadeTests {
         ResultException e = assertThrows(ResultException.class, () -> facade.joinGame(new JoinGameRequest(token, "WHITE", gameID)));
         assertEquals(403, e.statusCode());
     }
+
+    @Test
+    void joinGameAsObserverSucceeds() throws DataAccessException {
+        String token = "abc123";
+        String username = "test_user";
+        String gameName = "test_game";
+        int gameID = 1;
+
+        authDAO.createAuth(new AuthData(token, username));
+        gameDAO.createGame(new AuthData(token, username), gameName);
+
+        assertDoesNotThrow(() -> facade.joinGame(new JoinGameRequest(token, null, gameID)));
+    }
+
+    @Test
+    void joinGameNonexistentGameFails() throws DataAccessException {
+        String token = "abc123";
+        String username = "test_user";
+        int invalidGameID = 999;
+
+        authDAO.createAuth(new AuthData(token, username));
+
+        ResultException e = assertThrows(ResultException.class, () ->
+                facade.joinGame(new JoinGameRequest(token, "WHITE", invalidGameID)));
+        assertEquals(400, e.statusCode());
+    }
+
+    @Test
+    void joinGameInvalidPlayerColorFails() throws DataAccessException {
+        String token = "abc123";
+        String username = "test_user";
+        String gameName = "test_game";
+        int gameID = 1;
+
+        authDAO.createAuth(new AuthData(token, username));
+        gameDAO.createGame(new AuthData(token, username), gameName);
+
+        ResultException e = assertThrows(ResultException.class, () ->
+                facade.joinGame(new JoinGameRequest(token, "BLUE", gameID)));
+        assertEquals(400, e.statusCode());
+    }
+
 }
