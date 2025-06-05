@@ -53,8 +53,11 @@ public class CommandInterpreter {
             case "help" -> getLoggedOutHelp();
             case "register" -> {
                 requireArgs(args, 4);
-                facade.register(new UserData(args[1], args[2], args[3]));
-                yield "User " + args[1] + " successfully registered.";
+                var result = facade.register(new UserData(args[1], args[2], args[3]));
+                loggedIn = true;
+                username = result.username();
+                authToken = result.authToken();
+                yield "User " + username + " successfully registered and logged in.";
             }
             case "login" -> {
                 requireArgs(args, 3);
@@ -154,26 +157,43 @@ public class CommandInterpreter {
         ChessBoard board = game.getBoard();
 
         builder.append(playerColor == ChessGame.TeamColor.BLACK ? BLACK_COLS : WHITE_COLS).append("\n");
-        int step = (playerColor == ChessGame.TeamColor.BLACK) ? 1 : -1;
-        int startRow = (playerColor == ChessGame.TeamColor.BLACK) ? 1 : 8;
-        int endRow = (playerColor == ChessGame.TeamColor.BLACK) ? 8 : 1;
+        int rowStart = playerColor == ChessGame.TeamColor.BLACK ? 1 : 8;
+        int rowEnd = playerColor == ChessGame.TeamColor.BLACK ? 8 : 1;
+        int rowStep = playerColor == ChessGame.TeamColor.BLACK ? 1 : -1;
+        int jMult = playerColor == ChessGame.TeamColor.BLACK ? -1 : 1;
+        int jOffset = playerColor == ChessGame.TeamColor.BLACK ? 9 : 0;
 
-        for (int i = startRow; i != endRow + step; i += step) {
-            printRow(board, i, builder);
+        for (int row = rowStart; row != rowEnd + rowStep; row += rowStep) {
+            printRow(board, row, builder, jMult, jOffset);
         }
 
         builder.append(playerColor == ChessGame.TeamColor.BLACK ? BLACK_COLS : WHITE_COLS);
         return builder.toString();
     }
 
-    private void printRow(ChessBoard board, int row, StringBuilder builder) {
-        builder.append(EscapeSequences.ROW_COL_FORMAT).append(" ").append(row).append(" ").append(EscapeSequences.RESET_TEXT_BOLD_FAINT);
-        for (int col = 1; col <= 8; col++) {
-            builder.append((row + col) % 2 == 0 ? EscapeSequences.SET_BG_COLOR_BROWN : EscapeSequences.SET_BG_COLOR_IVORY);
-            builder.append(formatPiece(board.getPiece(new ChessPosition(row, col))));
+
+    private void printRow(ChessBoard board, int i, StringBuilder builder, int jMult, int jOffset) {
+        builder.append(EscapeSequences.ROW_COL_FORMAT);
+        builder.append(" ");
+        builder.append(i);
+        builder.append(" ");
+        builder.append(EscapeSequences.RESET_TEXT_BOLD_FAINT);
+
+        for (int j = 1; j <= 8; j++) {
+            int col = jOffset + (jMult * j);
+            builder.append((i + col) % 2 == 0 ? EscapeSequences.SET_BG_COLOR_BROWN : EscapeSequences.SET_BG_COLOR_IVORY);
+            var piece = board.getPiece(new ChessPosition(i, col));
+            builder.append(formatPiece(piece));
         }
-        builder.append(EscapeSequences.ROW_COL_FORMAT).append(" ").append(row).append(" ").append(EscapeSequences.RESET_BG_COLOR).append("\n");
+
+        builder.append(EscapeSequences.ROW_COL_FORMAT);
+        builder.append(" ");
+        builder.append(i);
+        builder.append(" ");
+        builder.append(EscapeSequences.RESET_BG_COLOR);
+        builder.append("\n");
     }
+
 
     private String formatPiece(ChessPiece piece) {
         if (piece == null) {

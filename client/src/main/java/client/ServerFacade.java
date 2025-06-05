@@ -16,8 +16,8 @@ public class ServerFacade {
         this.serverUrl = url;
     }
 
-    public void register(UserData request) throws ResultException {
-        sendRequest("POST", "/user", request, RegisterResponse.class, null);
+    public LoginResponse register(UserData request) throws ResultException {
+        return sendRequest("POST", "/user", request, LoginResponse.class, null);
     }
 
     public LoginResponse login(UserData request) throws ResultException {
