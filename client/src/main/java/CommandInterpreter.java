@@ -89,9 +89,39 @@ public class CommandInterpreter {
                 loggedIn = false;
                 username = LOGGED_OUT;
                 authToken = "";
+                if (webSocketClient != null) {
+                    webSocketClient.close();
+                    webSocketClient = null;
+                }
                 yield "Logged out successfully.";
             }
             case "quit" -> throw new ResultException(400, "Error: Must log out before quitting.");
+            case "redraw" -> {
+                requireWebSocket();
+                yield drawBoard(webSocketClient.getGame(), webSocketClient.getTeamColor());
+            }
+            case "leave" -> {
+                requireWebSocket();
+                webSocketClient.sendLeave();
+                webSocketClient.close();
+                webSocketClient = null;
+                yield "You left the game.";
+            }
+            case "resign" -> {
+                requireWebSocket();
+                webSocketClient.sendResign();
+                webSocketClient.close();
+                webSocketClient = null;
+                yield "You resigned from the game.";
+            }
+            case "move" -> {
+                requireWebSocket();
+                requireArgs(args, 3);
+                ChessPosition from = parsePosition(args[1]);
+                ChessPosition to = parsePosition(args[2]);
+                webSocketClient.sendMove(from, to);
+                yield "Move sent: " + args[1] + " to " + args[2];
+            }
             default -> throw new ResultException(400, "Unknown command: " + input);
         };
     }
