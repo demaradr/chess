@@ -1,5 +1,6 @@
 package websocket.messages;
 
+import chess.ChessGame;
 import java.util.Objects;
 
 /**
@@ -9,7 +10,10 @@ import java.util.Objects;
  * methods.
  */
 public class ServerMessage {
-    ServerMessageType serverMessageType;
+    private final ServerMessageType serverMessageType;
+    private final String message;
+    private final String errorMessage;
+    private final ChessGame game;
 
     public enum ServerMessageType {
         LOAD_GAME,
@@ -17,28 +21,48 @@ public class ServerMessage {
         NOTIFICATION
     }
 
-    public ServerMessage(ServerMessageType type) {
+    public ServerMessage(ServerMessageType type, String message, ChessGame game) {
         this.serverMessageType = type;
+        this.game = game;
+
+        if (type == ServerMessageType.ERROR) {
+            this.message = null;
+            this.errorMessage = message;
+        } else {
+            this.message = message;
+            this.errorMessage = null;
+        }
     }
 
     public ServerMessageType getServerMessageType() {
-        return this.serverMessageType;
+        return serverMessageType;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
+    public ChessGame getGame() {
+        return game;
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof ServerMessage)) {
-            return false;
-        }
+        if (this == o) return true;
+        if (!(o instanceof ServerMessage)) return false;
         ServerMessage that = (ServerMessage) o;
-        return getServerMessageType() == that.getServerMessageType();
+        return serverMessageType == that.serverMessageType &&
+                Objects.equals(message, that.message) &&
+                Objects.equals(errorMessage, that.errorMessage) &&
+                Objects.equals(game, that.game);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getServerMessageType());
+        return Objects.hash(serverMessageType, message, errorMessage, game);
     }
 }
