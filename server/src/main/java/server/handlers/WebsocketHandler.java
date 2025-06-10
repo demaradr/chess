@@ -119,16 +119,81 @@ public class WebsocketHandler {
         GameData gameData = gameDAO.getGame(authData, msg.getGameID());
         ChessGame game = gameData.game();
 
-        // Resign logic (for now just notify)
-        ServerMessage serverMessage = new ServerMessage(ServerMessageType.NOTIFICATION, authData.username() + " resigned", game);
-        return gson.toJson(serverMessage);
+        if (game.getWinner() != null) {
+            return errorMessage("Game is already over. Cannot resign.");
+        }
+
+        ChessGame.TeamColor resigningPlayerColor = null;
+        if (authData.username().equals(gameData.whiteUsername())) {
+            resigningPlayerColor = ChessGame.TeamColor.WHITE;
+        } else if (authData.username().equals(gameData.blackUsername())) {
+            resigningPlayerColor = ChessGame.TeamColor.BLACK;
+        } else {
+            return errorMessage("You are not a player in this game.");
+        }
+
+        ChessGame.TeamColor winnerColor = (resigningPlayerColor == ChessGame.TeamColor.WHITE)
+                ? ChessGame.TeamColor.BLACK
+                : ChessGame.TeamColor.WHITE;
+
+        game.setWinner(winnerColor);
+
+        gameDAO.updateGame(gameData);
+
+        broadcastToAllPlayers(msg.getGameID(), new ServerMessage(
+                ServerMessage.ServerMessageType.NOTIFICATION,
+                authData.username() + " resigned.",
+                null
+        ));
+
+        return null;
     }
 
-    private String handleLeave(AuthData authData, ClientMessage msg) {
-        ServerMessage serverMessage = new ServerMessage(ServerMessageType.NOTIFICATION,
-                authData.username() + " left the game.", null);
-        return gson.toJson(serverMessage);
+
+
+    private String handleLeave(Session session, AuthData authData, ClientMessage msg) throws IOException, DataAccessException {
+        sessionAuthTokens.remove(session);
+        sessionGameIDs.remove(session);
+        session.close();
+
+        GameData gameData = gameDAO.getGame(authData, msg.getGameID());
+
+        boolean wasWhite = authData.username().equals(gameData.whiteUsername());
+        boolean wasBlack = authData.username().equals(gameData.blackUsername());
+
+        if (wasWhite) {
+            gameData = new GameData(
+                    gameData.gameID(),
+                    null,
+                    gameData.blackUsername(),
+                    gameData.gameName(),
+                    gameData.game()
+            );
+        } else if (wasBlack) {
+            gameData = new GameData(
+                    gameData.gameID(),
+                    gameData.whiteUsername(),
+                    null,
+                    gameData.gameName(),
+                    gameData.game()
+            );
+        }
+
+        gameDAO.updateGame(gameData);
+
+        broadcastToOtherPlayers(session, msg.getGameID(), new ServerMessage(
+                ServerMessage.ServerMessageType.NOTIFICATION,
+                authData.username() + " left the game.",
+                null
+        ));
+
+        return null;
     }
+
+
+
+
+
 
     private String errorMessage(String message) {
         ServerMessage serverMessage = new ServerMessage(ServerMessageType.ERROR, message, null);
