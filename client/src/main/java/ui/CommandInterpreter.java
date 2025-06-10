@@ -1,9 +1,12 @@
+package ui;
+
 import chess.*;
 import client.ResultException;
 import client.ServerFacade;
+import client.ChessWebSocketClient;
 import model.*;
 import request.*;
-import ui.EscapeSequences;
+
 import java.util.ArrayList;
 import java.util.Scanner;
 
@@ -17,6 +20,7 @@ public class CommandInterpreter {
     private String username;
     private String authToken;
     private ArrayList<Integer> gameIDList;
+    private ChessWebSocketClient webSocketClient;
 
     public CommandInterpreter(ServerFacade facade) {
         this.facade = facade;
@@ -144,13 +148,29 @@ public class CommandInterpreter {
         int gameID = getGameIdFromList(args[1]);
         ChessGame.TeamColor color = parseColor(args[2]);
         facade.joinGame(new JoinGameRequest(authToken, color.name(), gameID));
-        return drawBoard(new ChessGame(), color);
+        webSocketClient = new ChessWebSocketClient("ws://localhost:8080", authToken, gameID, username, color);
+
+        try {
+            ChessGame game = webSocketClient.getGameLoadedFuture().get();  // ⏳ wait for game
+            return drawBoard(game, color);
+        } catch (Exception e) {
+            throw new ResultException(500, "Failed to load game state: " + e.getMessage());
+        }
+
     }
 
     private String observeGame(String[] args) throws ResultException {
         requireArgs(args, 2);
         int gameID = getGameIdFromList(args[1]);
-        return drawBoard(new ChessGame(), ChessGame.TeamColor.WHITE);
+        webSocketClient = new ChessWebSocketClient("ws://localhost:8080", authToken, gameID, username, null);
+
+        try {
+            ChessGame game = webSocketClient.getGameLoadedFuture().get();  // wait for game
+            return drawBoard(game, ChessGame.TeamColor.WHITE);
+        } catch (Exception e) {
+            throw new ResultException(500, "Failed to load game state: " + e.getMessage());
+        }
+
     }
 
     private static void appendGameInfo(GameData game, StringBuilder builder, int index) {
@@ -182,6 +202,23 @@ public class CommandInterpreter {
         };
     }
 
+    private ChessPosition parsePosition(String input) throws ResultException {
+        if (input.length() != 2) throw new ResultException(400, "Invalid position: " + input);
+        char colChar = input.charAt(0);
+        char rowChar = input.charAt(1);
+        int col = colChar - 'a' + 1;
+        int row = rowChar - '1' + 1;
+        if (col < 1 || col > 8 || row < 1 || row > 8)
+            throw new ResultException(400, "Invalid board position: " + input);
+        return new ChessPosition(row, col);
+    }
+
+    private void requireWebSocket() throws ResultException {
+        if (webSocketClient == null) {
+            throw new ResultException(400, "You're not in a game. Join or observe first.");
+        }
+    }
+
     private String drawBoard(ChessGame game, ChessGame.TeamColor playerColor) {
         StringBuilder builder = new StringBuilder();
         ChessBoard board = game.getBoard();
@@ -200,7 +237,6 @@ public class CommandInterpreter {
         builder.append(playerColor == ChessGame.TeamColor.BLACK ? BLACK_COLS : WHITE_COLS);
         return builder.toString();
     }
-
 
     private void printRow(ChessBoard board, int i, StringBuilder builder, int jMult, int jOffset) {
         builder.append(EscapeSequences.ROW_COL_FORMAT);
@@ -224,7 +260,6 @@ public class CommandInterpreter {
         builder.append("\n");
     }
 
-
     private String formatPiece(ChessPiece piece) {
         if (piece == null) {
             return EscapeSequences.EMPTY;
@@ -242,7 +277,6 @@ public class CommandInterpreter {
             case PAWN -> piece.getTeamColor() == ChessGame.TeamColor.WHITE ? EscapeSequences.WHITE_PAWN : EscapeSequences.BLACK_PAWN;
         } + EscapeSequences.RESET_TEXT_BOLD_FAINT;
     }
-
 
     private void printError(ResultException ex) {
         String message = switch (ex.statusCode()) {
@@ -278,8 +312,11 @@ public class CommandInterpreter {
                 \t\033[34;1mcreate <gameName>\033[0m - Create a new game.
                 \t\033[34;1mjoin <gameID> <WHITE|BLACK>\033[0m - Join a game.
                 \t\033[34;1mobserve <gameID>\033[0m - Observe a game.
+                \t\033[34;1mmove <startPos> <endPos>\033[0m - Make a move in the game.
+                \t\033[34;1mredraw\033[0m - Reprint the board.
+                \t\033[34;1mleave\033[0m - Leave the game.
+                \t\033[34;1mresign\033[0m - Resign from the game.
                 \t\033[34;1mlogout\033[0m - Log out.
                 """;
     }
-
 }

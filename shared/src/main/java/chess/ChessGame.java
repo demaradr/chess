@@ -130,7 +130,7 @@ public class ChessGame {
      * @param move chess move to perform
      * @throws InvalidMoveException if move is invalid
      */
-    public boolean makeMove(ChessMove move) throws InvalidMoveException {
+    public void makeMove(ChessMove move) throws InvalidMoveException {
         ChessBoard board = getBoard();
         ChessPosition start = move.getStartPosition();
         ChessPosition end = move.getEndPosition();
@@ -168,7 +168,12 @@ public class ChessGame {
         }
 
         currentTurn = (currentTurn == TeamColor.WHITE) ? TeamColor.BLACK : TeamColor.WHITE;
-        return true;
+
+        if (isInCheckmate(currentTurn)) {
+            winner = (currentTurn == TeamColor.WHITE) ? TeamColor.BLACK : TeamColor.WHITE;
+        } else if (isInStalemate(currentTurn)) {
+            winner = null;
+        }
     }
 
     /**
