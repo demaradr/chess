@@ -36,7 +36,18 @@ public class WebsocketHandler {
         System.out.println("Received: " + message);
 
         try {
+            if (message == null || message.trim().isEmpty() || !message.trim().startsWith("{")) {
+                session.getRemote().sendString(errorMessage("Message must be a JSON object."));
+                return;
+            }
+
             ClientMessage clientMessage = gson.fromJson(message, ClientMessage.class);
+
+            if (clientMessage == null || clientMessage.getCommandType() == null) {
+                session.getRemote().sendString(errorMessage("Invalid message format."));
+                return;
+            }
+
             AuthData authData = authDAO.authenticate(clientMessage.getAuthToken());
             sessionAuthTokens.put(session, clientMessage.getAuthToken());
             sessionGameIDs.put(session, clientMessage.getGameID());
@@ -132,11 +143,7 @@ public class WebsocketHandler {
             return errorMessage("It is not your turn.");
         }
 
-        boolean moveResult = game.makeMove(move);
-
-        if (!moveResult) {
-            return errorMessage("Illegal move.");
-        }
+        game.makeMove(move);
 
         GameData updatedGameData = new GameData(
                 gameData.gameID(),
@@ -172,6 +179,7 @@ public class WebsocketHandler {
         }
         return null;
     }
+
 
 
 
@@ -265,12 +273,6 @@ public class WebsocketHandler {
 
         return null;
     }
-
-
-
-
-
-
     private String errorMessage(String message) {
         ServerMessage serverMessage = new ServerMessage(ServerMessageType.ERROR, message, null);
         return gson.toJson(serverMessage);
