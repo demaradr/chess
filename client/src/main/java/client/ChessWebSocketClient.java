@@ -13,6 +13,7 @@ import javax.websocket.*;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.concurrent.CompletableFuture;
 
 public class ChessWebSocketClient extends Endpoint {
 
@@ -20,13 +21,15 @@ public class ChessWebSocketClient extends Endpoint {
     private final ConsolePrinter printer;
     private final CommandInterpreter interpreter;
     private final Gson gson;
-
+    private final CompletableFuture<ChessGame> gameLoaded = new CompletableFuture<>();
     private final String authToken;
     private final int gameID;
     private final String username;
     private final ChessGame.TeamColor teamColor;
 
     private ChessGame game;
+
+    private final Object sessionLock = new Object();
 
     public ChessWebSocketClient(String url, String authToken, int gameID, String username, ChessGame.TeamColor teamColor) {
         this.authToken = authToken;
@@ -43,16 +46,9 @@ public class ChessWebSocketClient extends Endpoint {
             URI socketURI = new URI(url + "/ws");
 
             WebSocketContainer container = ContainerProvider.getWebSocketContainer();
-            this.session = container.connectToServer(this, socketURI);
 
-            this.session.addMessageHandler((MessageHandler.Whole<String>) message -> {
-                ServerMessage notification = gson.fromJson(message, ServerMessage.class);
-                switch (notification.getServerMessageType()) {
-                    case NOTIFICATION -> printer.notify();
-                    case LOAD_GAME -> this.game = notification.getGame();
-                    default -> printer.printError(notification.getErrorMessage());
-                }
-            });
+            container.connectToServer(this, socketURI);
+
         } catch (DeploymentException | IOException | URISyntaxException ex) {
             printer.printError(ex.getMessage());
         }
@@ -61,7 +57,100 @@ public class ChessWebSocketClient extends Endpoint {
     @Override
     public void onOpen(Session session, EndpointConfig config) {
         this.session = session;
+
+        session.addMessageHandler(new MessageHandler.Whole<Object>() {
+            @Override
+            public void onMessage(Object message) {
+                try {
+                    String jsonString = null;
+
+                    if (message instanceof String s) {
+                        jsonString = s;
+                    } else if (message instanceof java.nio.ByteBuffer buffer) {
+                        byte[] bytes = new byte[buffer.remaining()];
+                        buffer.get(bytes);
+                        jsonString = new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+                    } else {
+                        printer.printError("Received unexpected message type: " + message.getClass().getName() +
+                                " with value: " + message.toString());
+                        new Exception("Debug: unexpected message type received").printStackTrace();
+                        System.err.println("Session: " + session);
+                        return;
+                    }
+
+                    ServerMessage notification = gson.fromJson(jsonString, ServerMessage.class);
+
+                    switch (notification.getServerMessageType()) {
+                        case NOTIFICATION -> printer.notify();
+                        case LOAD_GAME -> {
+                            game = notification.getGame();
+                            gameLoaded.complete(game);
+                        }
+                        default -> printer.printError(notification.getErrorMessage());
+                    }
+                } catch (Exception e) {
+                    printer.printError("JSON parse error: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        });
+
         sendConnect();
+    }
+
+
+
+
+    private boolean isConnected() {
+        return session != null && session.isOpen();
+    }
+
+    public CompletableFuture<ChessGame> getGameLoadedFuture() {
+        return gameLoaded;
+    }
+
+    public void sendConnect() {
+        if (!isConnected()) {
+            printer.printError("WebSocket not connected yet. Can't send connect.");
+            return;
+        }
+        try {
+            var msg = new ClientMessage(ClientMessage.ClientMessageType.CONNECT, authToken, gameID, null);
+            session.getBasicRemote().sendText(gson.toJson(msg));
+        } catch (IOException ex) {
+            printer.printError("Error sending connect message: " + ex.getMessage());
+        }
+    }
+
+    public void sendLeave() {
+        if (!isConnected()) return;
+        try {
+            var msg = new ClientMessage(ClientMessage.ClientMessageType.LEAVE, authToken, gameID, null);
+            session.getBasicRemote().sendText(gson.toJson(msg));
+        } catch (IOException ex) {
+            printer.printError("Error sending leave message: " + ex.getMessage());
+        }
+    }
+
+    public void sendResign() {
+        if (!isConnected()) return;
+        try {
+            var msg = new ClientMessage(ClientMessage.ClientMessageType.RESIGN, authToken, gameID, null);
+            session.getBasicRemote().sendText(gson.toJson(msg));
+        } catch (IOException ex) {
+            printer.printError("Error sending resign message: " + ex.getMessage());
+        }
+    }
+
+    public void sendMove(ChessPosition from, ChessPosition to) {
+        if (!isConnected()) return;
+        try {
+            var move = new ChessMove(from, to, null);
+            var msg = new ClientMessage(ClientMessage.ClientMessageType.MAKE_MOVE, authToken, gameID,null);
+            session.getBasicRemote().sendText(gson.toJson(msg));
+        } catch (IOException ex) {
+            printer.printError("Error sending move: " + ex.getMessage());
+        }
     }
 
     public void close() {
@@ -74,48 +163,17 @@ public class ChessWebSocketClient extends Endpoint {
         }
     }
 
-    public void sendConnect() {
-        try {
-            var msg = new ClientMessage(ClientMessage.ClientMessageType.CONNECT, authToken, gameID);
-            session.getBasicRemote().sendText(gson.toJson(msg));
-        } catch (IOException ex) {
-            printer.printError("Error sending connect message: " + ex.getMessage());
-        }
-    }
-
-    public void sendLeave() {
-        try {
-            var msg = new ClientMessage(ClientMessage.ClientMessageType.LEAVE, authToken, gameID);
-            session.getBasicRemote().sendText(gson.toJson(msg));
-        } catch (IOException ex) {
-            printer.printError("Error sending leave message: " + ex.getMessage());
-        }
-    }
-
-    public void sendResign() {
-        try {
-            var msg = new ClientMessage(ClientMessage.ClientMessageType.RESIGN, authToken, gameID);
-            session.getBasicRemote().sendText(gson.toJson(msg));
-        } catch (IOException ex) {
-            printer.printError("Error sending resign message: " + ex.getMessage());
-        }
-    }
-
-    public void sendMove(ChessPosition from, ChessPosition to) {
-        try {
-            var move = new ChessMove(from, to, null);
-            var msg = new ClientMessage(ClientMessage.ClientMessageType.MAKE_MOVE, authToken, gameID);
-            session.getBasicRemote().sendText(gson.toJson(msg));
-        } catch (IOException ex) {
-            printer.printError("Error sending move: " + ex.getMessage());
-        }
-    }
-
     public ChessGame getGame() {
         return game;
     }
 
     public ChessGame.TeamColor getTeamColor() {
         return teamColor;
+    }
+
+    @Override
+    public void onError(Session session, Throwable thr) {
+        printer.printError("WebSocket error: " + thr.getMessage());
+        thr.printStackTrace();
     }
 }
