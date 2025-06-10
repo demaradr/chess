@@ -84,7 +84,18 @@ public class WebsocketHandler {
             return errorMessage("Missing move data.");
         }
 
-        ChessGame game = gameData.game();
+        boolean isWhitePlayer = authData.username().equals(gameData.whiteUsername());
+        boolean isBlackPlayer = authData.username().equals(gameData.blackUsername());
+
+        if (!isWhitePlayer && !isBlackPlayer) {
+            return errorMessage("You are not a player in this game.");
+        }
+
+        ChessGame.TeamColor playerColor = isWhitePlayer ? ChessGame.TeamColor.WHITE : ChessGame.TeamColor.BLACK;
+        if (game.getTeamTurn() != playerColor) {
+            return errorMessage("It is not your turn.");
+        }
+
         boolean moveResult = game.makeMove(move);
 
         if (!moveResult) {
