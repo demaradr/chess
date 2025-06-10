@@ -14,12 +14,14 @@ import websocket.messages.ClientMessage.ClientMessageType;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.*;
 import java.io.IOException;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @WebSocket
 public class WebsocketHandler {
 
     private static final ConcurrentHashMap<Session, String> sessionAuthTokens = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Session, Integer> sessionGameIDs = new ConcurrentHashMap<>();
     private final MySQLAuthDAO authDAO = new MySQLAuthDAO();
     private final MySQLGameDAO gameDAO = new MySQLGameDAO();
     private final Gson gson = new Gson();
@@ -37,16 +39,19 @@ public class WebsocketHandler {
             ClientMessage clientMessage = gson.fromJson(message, ClientMessage.class);
             AuthData authData = authDAO.authenticate(clientMessage.getAuthToken());
             sessionAuthTokens.put(session, clientMessage.getAuthToken());
+            sessionGameIDs.put(session, clientMessage.getGameID());
 
             String response = switch (clientMessage.getCommandType()) {
-                case CONNECT -> handleConnect(authData, clientMessage);
+                case CONNECT -> handleConnect(session, authData, clientMessage);
                 case MAKE_MOVE -> handleMakeMove(authData, clientMessage);
                 case RESIGN -> handleResign(authData, clientMessage);
-                case LEAVE -> handleLeave(authData, clientMessage);
+                case LEAVE -> handleLeave(session, authData, clientMessage);
                 default -> errorMessage("Invalid command type.");
             };
 
-            session.getRemote().sendString(response);
+            if (response != null) {
+                session.getRemote().sendString(response);
+            }
 
         } catch (UnauthorizedException e) {
             session.getRemote().sendString(errorMessage("Unauthorized: " + e.getMessage()));
@@ -63,21 +68,48 @@ public class WebsocketHandler {
     public void onClose(Session session, int statusCode, String reason) {
         System.out.println("WebSocket Closed: " + session);
         sessionAuthTokens.remove(session);
+        sessionGameIDs.remove(session);
     }
 
     @OnWebSocketError
     public void onError(Session session, Throwable error) {
+        System.err.println("WebSocket error on session " + session + ": " + error);
         error.printStackTrace();
     }
 
-    private String handleConnect(AuthData authData, ClientMessage msg) throws DataAccessException {
+    private String handleConnect(Session session, AuthData authData, ClientMessage msg) throws DataAccessException, IOException {
         GameData gameData = gameDAO.getGame(authData, msg.getGameID());
-        ServerMessage serverMessage = new ServerMessage(ServerMessageType.LOAD_GAME, "Game loaded", gameData.game());
-        return gson.toJson(serverMessage);
+
+        ServerMessage loadGameMessage = new ServerMessage(ServerMessageType.LOAD_GAME, null, gameData.game());
+        session.getRemote().sendString(gson.toJson(loadGameMessage));
+
+        broadcastToOtherPlayers(session, msg.getGameID(), new ServerMessage(
+                ServerMessageType.NOTIFICATION,
+                authData.username() + " has joined the game.",
+                null
+        ));
+
+        return null;
     }
 
-    private String handleMakeMove(AuthData authData, ClientMessage msg) throws DataAccessException, InvalidMoveException {
+    private void broadcastToOtherPlayers(Session senderSession, int gameID, ServerMessage message) throws IOException {
+        String messageJson = gson.toJson(message);
+
+        for (Map.Entry<Session, Integer> entry : sessionGameIDs.entrySet()) {
+            Session session = entry.getKey();
+            Integer sessionGameID = entry.getValue();
+
+            if (session.isOpen() && !session.equals(senderSession) && Objects.equals(sessionGameID, gameID)) {
+                session.getRemote().sendString(messageJson);
+            }
+        }
+    }
+
+
+
+    private String handleMakeMove(AuthData authData, ClientMessage msg) throws DataAccessException, InvalidMoveException, IOException {
         GameData gameData = gameDAO.getGame(authData, msg.getGameID());
+        ChessGame game = gameData.game();
         ChessMove move = msg.getMove();
 
         if (move == null) {
@@ -89,6 +121,10 @@ public class WebsocketHandler {
 
         if (!isWhitePlayer && !isBlackPlayer) {
             return errorMessage("You are not a player in this game.");
+        }
+
+        if (game.getWinner() != null) {
+            return errorMessage("Game is over. No moves allowed.");
         }
 
         ChessGame.TeamColor playerColor = isWhitePlayer ? ChessGame.TeamColor.WHITE : ChessGame.TeamColor.BLACK;
@@ -111,11 +147,51 @@ public class WebsocketHandler {
         );
 
         gameDAO.updateGame(updatedGameData);
-        ServerMessage serverMessage = new ServerMessage(ServerMessageType.NOTIFICATION, "Move accepted", game);
-        return gson.toJson(serverMessage);
+
+        broadcastToAllPlayers(msg.getGameID(), new ServerMessage(
+                ServerMessage.ServerMessageType.LOAD_GAME,
+                null,
+                game
+        ));
+
+        broadcastToOtherPlayers(findSessionByAuthToken(authData.authToken()), msg.getGameID(), new ServerMessage(
+                ServerMessage.ServerMessageType.NOTIFICATION,
+                authData.username() + " made a move.",
+                null
+        ));
+
+        return null;
     }
 
-    private String handleResign(AuthData authData, ClientMessage msg) throws DataAccessException {
+
+    private Session findSessionByAuthToken(String authToken) {
+        for (Map.Entry<Session, String> entry : sessionAuthTokens.entrySet()) {
+            if (entry.getValue().equals(authToken)) {
+                return entry.getKey();
+            }
+        }
+        return null;
+    }
+
+
+
+    private void broadcastToAllPlayers(int gameID, ServerMessage message) throws IOException {
+        String messageJson = gson.toJson(message);
+
+        System.out.println("Broadcasting message to all players in game: " + gameID);
+
+        for (Map.Entry<Session, Integer> entry : sessionGameIDs.entrySet()) {
+            Session session = entry.getKey();
+            Integer sessionGameID = entry.getValue();
+
+            if (session.isOpen() && Objects.equals(sessionGameID, gameID)) {
+                System.out.println("Sending message to session: " + session);
+                session.getRemote().sendString(messageJson);
+            }
+        }
+    }
+
+    private String handleResign(AuthData authData, ClientMessage msg) throws DataAccessException, IOException {
         GameData gameData = gameDAO.getGame(authData, msg.getGameID());
         ChessGame game = gameData.game();
 
