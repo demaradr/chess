@@ -217,13 +217,16 @@ public class CommandInterpreter {
     }
 
     private ChessPosition parsePosition(String input) throws ResultException {
-        if (input.length() != 2) throw new ResultException(400, "Invalid position: " + input);
+        if (input.length() != 2) {
+            throw new ResultException(400, "Invalid position: " + input);
+        }
         char colChar = input.charAt(0);
         char rowChar = input.charAt(1);
         int col = colChar - 'a' + 1;
         int row = rowChar - '1' + 1;
-        if (col < 1 || col > 8 || row < 1 || row > 8)
+        if (col < 1 || col > 8 || row < 1 || row > 8) {
             throw new ResultException(400, "Invalid board position: " + input);
+        }
         return new ChessPosition(row, col);
     }
 
