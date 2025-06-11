@@ -10,7 +10,6 @@ import chess.ChessMove;
 import websocket.messages.ClientMessage;
 import websocket.messages.ServerMessage;
 import websocket.messages.ServerMessage.ServerMessageType;
-import websocket.messages.ClientMessage.ClientMessageType;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.*;
 import java.io.IOException;
@@ -20,8 +19,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @WebSocket
 public class WebsocketHandler {
 
-    private static final ConcurrentHashMap<Session, String> sessionAuthTokens = new ConcurrentHashMap<>();
-    private static final ConcurrentHashMap<Session, Integer> sessionGameIDs = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Session, String> SESSION_AUTH_TOKENS = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Session, Integer> SESSION_GAME_ID = new ConcurrentHashMap<>();
     private final MySQLAuthDAO authDAO = new MySQLAuthDAO();
     private final MySQLGameDAO gameDAO = new MySQLGameDAO();
     private final Gson gson = new Gson();
@@ -49,8 +48,7 @@ public class WebsocketHandler {
             }
 
             AuthData authData = authDAO.authenticate(clientMessage.getAuthToken());
-            sessionAuthTokens.put(session, clientMessage.getAuthToken());
-            sessionGameIDs.put(session, clientMessage.getGameID());
+            SESSION_AUTH_TOKENS.put(session, clientMessage.getAuthToken());
 
             String response = switch (clientMessage.getCommandType()) {
                 case CONNECT -> handleConnect(session, authData, clientMessage);
@@ -62,6 +60,8 @@ public class WebsocketHandler {
 
             if (response != null) {
                 session.getRemote().sendString(response);
+            } else {
+                System.out.println("No direct response needed, message already handled.");
             }
 
         } catch (UnauthorizedException e) {
@@ -78,8 +78,8 @@ public class WebsocketHandler {
     @OnWebSocketClose
     public void onClose(Session session, int statusCode, String reason) {
         System.out.println("WebSocket Closed: " + session);
-        sessionAuthTokens.remove(session);
-        sessionGameIDs.remove(session);
+        SESSION_AUTH_TOKENS.remove(session);
+        SESSION_GAME_ID.remove(session);
     }
 
     @OnWebSocketError
@@ -90,13 +90,89 @@ public class WebsocketHandler {
 
     private String handleConnect(Session session, AuthData authData, ClientMessage msg) throws DataAccessException, IOException {
         GameData gameData = gameDAO.getGame(authData, msg.getGameID());
+        String username = authData.username();
+
+        boolean isWhitePlayer = username.equals(gameData.whiteUsername());
+        boolean isBlackPlayer = username.equals(gameData.blackUsername());
+
+        if (isWhitePlayer && isBlackPlayer) {
+            return errorMessage("User is already both sides — invalid state.");
+        }
+
+        if (isWhitePlayer || isBlackPlayer) {
+            SESSION_AUTH_TOKENS.put(session, authData.authToken());
+            SESSION_GAME_ID.put(session, msg.getGameID());
+
+            ServerMessage loadGameMessage = new ServerMessage(ServerMessageType.LOAD_GAME, null, gameData.game());
+            session.getRemote().sendString(gson.toJson(loadGameMessage));
+
+            broadcastToOtherPlayers(session, msg.getGameID(), new ServerMessage(
+                    ServerMessageType.NOTIFICATION,
+                    username + " has connected.",
+                    null
+            ));
+
+            return null;
+        }
+
+        if (msg.getPlayerColor() == null) {
+            SESSION_AUTH_TOKENS.put(session, authData.authToken());
+            SESSION_GAME_ID.put(session, msg.getGameID());
+
+            ServerMessage loadGameMessage = new ServerMessage(ServerMessageType.LOAD_GAME, null, gameData.game());
+            session.getRemote().sendString(gson.toJson(loadGameMessage));
+
+            broadcastToOtherPlayers(session, msg.getGameID(), new ServerMessage(
+                    ServerMessageType.NOTIFICATION,
+                    username + " is observing the game.",
+                    null
+            ));
+
+            return null;
+        }
+
+        ChessGame.TeamColor requestedColor;
+        try {
+            requestedColor = ChessGame.TeamColor.valueOf(msg.getPlayerColor().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return errorMessage("Invalid player color requested.");
+        }
+
+        if (requestedColor == ChessGame.TeamColor.WHITE) {
+            if (gameData.whiteUsername() != null) {
+                return errorMessage("White side is already taken.");
+            }
+            gameData = new GameData(
+                    gameData.gameID(),
+                    username,
+                    gameData.blackUsername(),
+                    gameData.gameName(),
+                    gameData.game()
+            );
+        } else if (requestedColor == ChessGame.TeamColor.BLACK) {
+            if (gameData.blackUsername() != null) {
+                return errorMessage("Black side is already taken.");
+            }
+            gameData = new GameData(
+                    gameData.gameID(),
+                    gameData.whiteUsername(),
+                    username,
+                    gameData.gameName(),
+                    gameData.game()
+            );
+        }
+
+        gameDAO.updateGame(gameData);
+
+        SESSION_AUTH_TOKENS.put(session, authData.authToken());
+        SESSION_GAME_ID.put(session, msg.getGameID());
 
         ServerMessage loadGameMessage = new ServerMessage(ServerMessageType.LOAD_GAME, null, gameData.game());
         session.getRemote().sendString(gson.toJson(loadGameMessage));
 
         broadcastToOtherPlayers(session, msg.getGameID(), new ServerMessage(
                 ServerMessageType.NOTIFICATION,
-                authData.username() + " has joined the game.",
+                username + " has joined the game as " + requestedColor.toString().toLowerCase() + ".",
                 null
         ));
 
@@ -106,7 +182,7 @@ public class WebsocketHandler {
     private void broadcastToOtherPlayers(Session senderSession, int gameID, ServerMessage message) throws IOException {
         String messageJson = gson.toJson(message);
 
-        for (Map.Entry<Session, Integer> entry : sessionGameIDs.entrySet()) {
+        for (Map.Entry<Session, Integer> entry : SESSION_GAME_ID.entrySet()) {
             Session session = entry.getKey();
             Integer sessionGameID = entry.getValue();
 
@@ -115,8 +191,6 @@ public class WebsocketHandler {
             }
         }
     }
-
-
 
     private String handleMakeMove(AuthData authData, ClientMessage msg) throws DataAccessException, InvalidMoveException, IOException {
         GameData gameData = gameDAO.getGame(authData, msg.getGameID());
@@ -156,13 +230,13 @@ public class WebsocketHandler {
         gameDAO.updateGame(updatedGameData);
 
         broadcastToAllPlayers(msg.getGameID(), new ServerMessage(
-                ServerMessage.ServerMessageType.LOAD_GAME,
+                ServerMessageType.LOAD_GAME,
                 null,
                 game
         ));
 
         broadcastToOtherPlayers(findSessionByAuthToken(authData.authToken()), msg.getGameID(), new ServerMessage(
-                ServerMessage.ServerMessageType.NOTIFICATION,
+                ServerMessageType.NOTIFICATION,
                 authData.username() + " made a move.",
                 null
         ));
@@ -170,9 +244,8 @@ public class WebsocketHandler {
         return null;
     }
 
-
     private Session findSessionByAuthToken(String authToken) {
-        for (Map.Entry<Session, String> entry : sessionAuthTokens.entrySet()) {
+        for (Map.Entry<Session, String> entry : SESSION_AUTH_TOKENS.entrySet()) {
             if (entry.getValue().equals(authToken)) {
                 return entry.getKey();
             }
@@ -180,15 +253,12 @@ public class WebsocketHandler {
         return null;
     }
 
-
-
-
     private void broadcastToAllPlayers(int gameID, ServerMessage message) throws IOException {
         String messageJson = gson.toJson(message);
 
         System.out.println("Broadcasting message to all players in game: " + gameID);
 
-        for (Map.Entry<Session, Integer> entry : sessionGameIDs.entrySet()) {
+        for (Map.Entry<Session, Integer> entry : SESSION_GAME_ID.entrySet()) {
             Session session = entry.getKey();
             Integer sessionGameID = entry.getValue();
 
@@ -225,7 +295,7 @@ public class WebsocketHandler {
         gameDAO.updateGame(gameData);
 
         broadcastToAllPlayers(msg.getGameID(), new ServerMessage(
-                ServerMessage.ServerMessageType.NOTIFICATION,
+                ServerMessageType.NOTIFICATION,
                 authData.username() + " resigned.",
                 null
         ));
@@ -233,11 +303,9 @@ public class WebsocketHandler {
         return null;
     }
 
-
-
     private String handleLeave(Session session, AuthData authData, ClientMessage msg) throws IOException, DataAccessException {
-        sessionAuthTokens.remove(session);
-        sessionGameIDs.remove(session);
+        SESSION_AUTH_TOKENS.remove(session);
+        SESSION_GAME_ID.remove(session);
         session.close();
 
         GameData gameData = gameDAO.getGame(authData, msg.getGameID());
@@ -266,13 +334,14 @@ public class WebsocketHandler {
         gameDAO.updateGame(gameData);
 
         broadcastToOtherPlayers(session, msg.getGameID(), new ServerMessage(
-                ServerMessage.ServerMessageType.NOTIFICATION,
+                ServerMessageType.NOTIFICATION,
                 authData.username() + " left the game.",
                 null
         ));
 
         return null;
     }
+
     private String errorMessage(String message) {
         ServerMessage serverMessage = new ServerMessage(ServerMessageType.ERROR, message, null);
         return gson.toJson(serverMessage);

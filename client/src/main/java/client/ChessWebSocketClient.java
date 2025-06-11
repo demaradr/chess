@@ -77,12 +77,13 @@ public class ChessWebSocketClient extends Endpoint {
                     ServerMessage notification = gson.fromJson(jsonString, ServerMessage.class);
 
                     switch (notification.getServerMessageType()) {
-                        case NOTIFICATION -> printer.printNotification("Cannot join game as both sides");
+                        case NOTIFICATION -> printer.printNotification(notification.getMessage());
                         case LOAD_GAME -> {
                             game = notification.getGame();
                             gameLoaded.complete(game);
                         }
-                        default -> printer.printError(notification.getErrorMessage());
+                        case ERROR -> printer.printError(notification.getErrorMessage());
+                        default -> printer.printError("Unknown server message type.");
                     }
                 } catch (Exception e) {
                     printer.printError("JSON parse error: " + e.getMessage());
@@ -119,7 +120,9 @@ public class ChessWebSocketClient extends Endpoint {
     }
 
     public void sendLeave() {
-        if (!isConnected()) return;
+        if (!isConnected()) {
+            return;
+        }
         try {
             var msg = new ClientMessage(ClientMessage.ClientMessageType.LEAVE, authToken, gameID, null);
             session.getBasicRemote().sendText(gson.toJson(msg));
@@ -129,7 +132,9 @@ public class ChessWebSocketClient extends Endpoint {
     }
 
     public void sendResign() {
-        if (!isConnected()) return;
+        if (!isConnected()) {
+            return;
+        }
         try {
             var msg = new ClientMessage(ClientMessage.ClientMessageType.RESIGN, authToken, gameID, null);
             session.getBasicRemote().sendText(gson.toJson(msg));
@@ -139,7 +144,9 @@ public class ChessWebSocketClient extends Endpoint {
     }
 
     public void sendMove(ChessPosition from, ChessPosition to) {
-        if (!isConnected()) return;
+        if (!isConnected()) {
+            return;
+        }
         try {
             var move = new ChessMove(from, to, null);
             var msg = new ClientMessage(ClientMessage.ClientMessageType.MAKE_MOVE, authToken, gameID, move);
