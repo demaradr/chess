@@ -234,7 +234,8 @@ public class WebsocketHandler {
                 null,
                 game
         ));
-        String moveMessage = authData.username() + " made a move " + formatPosition(move.getStartPosition()) + " to " + formatPosition(move.getEndPosition()) + ".";
+        String moveMessage = authData.username() + " made a move " + formatPosition(move.getStartPosition()) +
+                " to " + formatPosition(move.getEndPosition()) + ".";
 
         broadcastToOtherPlayers(findSessionByAuthToken(authData.authToken()), msg.getGameID(), new ServerMessage(
                 ServerMessageType.NOTIFICATION,
