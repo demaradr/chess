@@ -234,6 +234,7 @@ public class WebsocketHandler {
                 null,
                 game
         ));
+
         String moveMessage = authData.username() + " made a move " + formatPosition(move.getStartPosition()) +
                 " to " + formatPosition(move.getEndPosition()) + ".";
 
@@ -246,7 +247,14 @@ public class WebsocketHandler {
         ChessGame.TeamColor opponentColor = authData.username().equals(gameData.whiteUsername())
                 ? ChessGame.TeamColor.BLACK : ChessGame.TeamColor.WHITE;
 
-        if (game.isInCheck(opponentColor)) {
+        if (game.getWinner() != null) {
+            broadcastToAllPlayers(msg.getGameID(), new ServerMessage(
+                    ServerMessageType.NOTIFICATION,
+                    authData.username() + " won the game by checkmate!",
+                    null
+            ));
+        }
+        else if (game.isInCheck(opponentColor)) {
             String checkMessage = opponentColor.name() + " is in check!";
             broadcastToAllPlayers(msg.getGameID(), new ServerMessage(
                     ServerMessageType.NOTIFICATION,
@@ -255,16 +263,9 @@ public class WebsocketHandler {
             ));
         }
 
-        if (game.getWinner() != null) {
-            broadcastToAllPlayers(msg.getGameID(), new ServerMessage(
-                    ServerMessageType.NOTIFICATION,
-                    authData.username() + " won the game by checkmate!",
-                    null
-            ));
-        }
-
         return null;
     }
+
 
     private String formatPosition(ChessPosition pos) {
         char file = (char) ('a' + (pos.getColumn() - 1));
