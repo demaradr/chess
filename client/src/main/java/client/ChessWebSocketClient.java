@@ -58,18 +58,14 @@ public class ChessWebSocketClient extends Endpoint {
     public void onOpen(Session session, EndpointConfig config) {
         this.session = session;
 
-        session.addMessageHandler(new MessageHandler.Whole<Object>() {
+        session.addMessageHandler(new MessageHandler.Whole<String>() {
             @Override
-            public void onMessage(Object message) {
+            public void onMessage(String message) {
                 try {
                     String jsonString = null;
 
                     if (message instanceof String s) {
                         jsonString = s;
-                    } else if (message instanceof java.nio.ByteBuffer buffer) {
-                        byte[] bytes = new byte[buffer.remaining()];
-                        buffer.get(bytes);
-                        jsonString = new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
                     } else {
                         printer.printError("Received unexpected message type: " + message.getClass().getName() +
                                 " with value: " + message.toString());
@@ -81,7 +77,7 @@ public class ChessWebSocketClient extends Endpoint {
                     ServerMessage notification = gson.fromJson(jsonString, ServerMessage.class);
 
                     switch (notification.getServerMessageType()) {
-                        case NOTIFICATION -> printer.notify();
+                        case NOTIFICATION -> printer.printNotification("Cannot join game as both sides");
                         case LOAD_GAME -> {
                             game = notification.getGame();
                             gameLoaded.complete(game);
@@ -146,7 +142,7 @@ public class ChessWebSocketClient extends Endpoint {
         if (!isConnected()) return;
         try {
             var move = new ChessMove(from, to, null);
-            var msg = new ClientMessage(ClientMessage.ClientMessageType.MAKE_MOVE, authToken, gameID,null);
+            var msg = new ClientMessage(ClientMessage.ClientMessageType.MAKE_MOVE, authToken, gameID, move);
             session.getBasicRemote().sendText(gson.toJson(msg));
         } catch (IOException ex) {
             printer.printError("Error sending move: " + ex.getMessage());
