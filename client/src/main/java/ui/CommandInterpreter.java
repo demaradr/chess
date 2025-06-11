@@ -8,7 +8,10 @@ import model.*;
 import request.*;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Scanner;
+import java.util.Set;
 
 public class CommandInterpreter {
     private static final String LOGGED_OUT = "LoggedOut";
@@ -126,6 +129,17 @@ public class CommandInterpreter {
                 webSocketClient.sendMove(from, to);
                 yield "Move sent: " + args[1] + " to " + args[2];
             }
+            case "highlight" -> {
+                requireWebSocket();
+                requireArgs(args, 2);
+                ChessPosition position = parsePosition(args[1]);
+                Collection<ChessMove> validMoves = webSocketClient.getGame().validMoves(position);
+                Set<ChessPosition> destinations = new HashSet<>();
+                for (ChessMove move : validMoves) {
+                    destinations.add(move.getEndPosition());
+                }
+                yield drawBoard(webSocketClient.getGame(), webSocketClient.getTeamColor(), destinations);
+            }
             default -> throw new ResultException(400, "Unknown command: " + input);
         };
     }
@@ -151,7 +165,7 @@ public class CommandInterpreter {
         webSocketClient = new ChessWebSocketClient("ws://localhost:8080", authToken, gameID, username, color);
 
         try {
-            ChessGame game = webSocketClient.getGameLoadedFuture().get();  // ⏳ wait for game
+            ChessGame game = webSocketClient.getGameLoadedFuture().get();
             return drawBoard(game, color);
         } catch (Exception e) {
             throw new ResultException(500, "Failed to load game state: " + e.getMessage());
@@ -165,7 +179,7 @@ public class CommandInterpreter {
         webSocketClient = new ChessWebSocketClient("ws://localhost:8080", authToken, gameID, username, null);
 
         try {
-            ChessGame game = webSocketClient.getGameLoadedFuture().get();  // wait for game
+            ChessGame game = webSocketClient.getGameLoadedFuture().get();
             return drawBoard(game, ChessGame.TeamColor.WHITE);
         } catch (Exception e) {
             throw new ResultException(500, "Failed to load game state: " + e.getMessage());
@@ -220,6 +234,10 @@ public class CommandInterpreter {
     }
 
     private String drawBoard(ChessGame game, ChessGame.TeamColor playerColor) {
+        return drawBoard(game, playerColor, new HashSet<>());
+    }
+
+    private String drawBoard(ChessGame game, ChessGame.TeamColor playerColor, Set<ChessPosition> highlights) {
         StringBuilder builder = new StringBuilder();
         ChessBoard board = game.getBoard();
 
@@ -231,14 +249,14 @@ public class CommandInterpreter {
         int jOffset = playerColor == ChessGame.TeamColor.BLACK ? 9 : 0;
 
         for (int row = rowStart; row != rowEnd + rowStep; row += rowStep) {
-            printRow(board, row, builder, jMult, jOffset);
+            printRow(board, row, builder, jMult, jOffset, highlights);
         }
 
         builder.append(playerColor == ChessGame.TeamColor.BLACK ? BLACK_COLS : WHITE_COLS);
         return builder.toString();
     }
 
-    private void printRow(ChessBoard board, int i, StringBuilder builder, int jMult, int jOffset) {
+    private void printRow(ChessBoard board, int i, StringBuilder builder, int jMult, int jOffset, Set<ChessPosition> highlights) {
         builder.append(EscapeSequences.ROW_COL_FORMAT);
         builder.append(" ");
         builder.append(i);
@@ -247,8 +265,15 @@ public class CommandInterpreter {
 
         for (int j = 1; j <= 8; j++) {
             int col = jOffset + (jMult * j);
-            builder.append((i + col) % 2 == 0 ? EscapeSequences.SET_BG_COLOR_BROWN : EscapeSequences.SET_BG_COLOR_IVORY);
-            var piece = board.getPiece(new ChessPosition(i, col));
+            ChessPosition position = new ChessPosition(i, col);
+
+            if (highlights.contains(position)) {
+                builder.append(EscapeSequences.SET_BG_COLOR_GREEN);
+            } else {
+                builder.append((i + col) % 2 == 0 ? EscapeSequences.SET_BG_COLOR_BROWN : EscapeSequences.SET_BG_COLOR_IVORY);
+            }
+
+            var piece = board.getPiece(position);
             builder.append(formatPiece(piece));
         }
 
@@ -313,6 +338,7 @@ public class CommandInterpreter {
                 \t\033[34;1mjoin <gameID> <WHITE|BLACK>\033[0m - Join a game.
                 \t\033[34;1mobserve <gameID>\033[0m - Observe a game.
                 \t\033[34;1mmove <startPos> <endPos>\033[0m - Make a move in the game.
+                \t\033[34;1mhighlight <position>\033[0m - Highlight all valid moves from the given position.
                 \t\033[34;1mredraw\033[0m - Reprint the board.
                 \t\033[34;1mleave\033[0m - Leave the game.
                 \t\033[34;1mresign\033[0m - Resign from the game.
