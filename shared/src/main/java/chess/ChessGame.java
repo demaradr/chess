@@ -141,7 +141,7 @@ public class ChessGame {
         }
 
         if (piece.getTeamColor() != currentTurn) {
-            throw new InvalidMoveException("It's not " + currentTurn + "'s turn");
+            throw new InvalidMoveException("It's " + currentTurn + "'s turn");
         }
 
         Collection<ChessMove> validMoves = validMoves(start);

@@ -1,5 +1,6 @@
 package server.handlers;
 
+import chess.ChessPosition;
 import chess.InvalidMoveException;
 import com.google.gson.Gson;
 import dataaccess.*;
@@ -27,6 +28,7 @@ public class WebsocketHandler {
 
     @OnWebSocketConnect
     public void onConnect(Session session) {
+        session.setIdleTimeout(30 * 60 * 1000);
         System.out.println("WebSocket Connected: " + session);
     }
 
@@ -95,22 +97,20 @@ public class WebsocketHandler {
         boolean isWhitePlayer = username.equals(gameData.whiteUsername());
         boolean isBlackPlayer = username.equals(gameData.blackUsername());
 
-        if (isWhitePlayer && isBlackPlayer) {
-            return errorMessage("User is already both sides — invalid state.");
-        }
-
         if (isWhitePlayer || isBlackPlayer) {
             SESSION_AUTH_TOKENS.put(session, authData.authToken());
             SESSION_GAME_ID.put(session, msg.getGameID());
 
             ServerMessage loadGameMessage = new ServerMessage(ServerMessageType.LOAD_GAME, null, gameData.game());
             session.getRemote().sendString(gson.toJson(loadGameMessage));
-
+            String color = isWhitePlayer ? "white" : "black";
             broadcastToOtherPlayers(session, msg.getGameID(), new ServerMessage(
                     ServerMessageType.NOTIFICATION,
-                    username + " has connected.",
+                    username + " has joined as " + color + ".",
                     null
             ));
+
+
 
             return null;
         }
@@ -234,15 +234,43 @@ public class WebsocketHandler {
                 null,
                 game
         ));
+        String moveMessage = authData.username() + " made a move " + formatPosition(move.getStartPosition()) + " to " + formatPosition(move.getEndPosition()) + ".";
 
         broadcastToOtherPlayers(findSessionByAuthToken(authData.authToken()), msg.getGameID(), new ServerMessage(
                 ServerMessageType.NOTIFICATION,
-                authData.username() + " made a move.",
+                moveMessage,
                 null
         ));
 
+        ChessGame.TeamColor opponentColor = authData.username().equals(gameData.whiteUsername())
+                ? ChessGame.TeamColor.BLACK : ChessGame.TeamColor.WHITE;
+
+        if (game.isInCheck(opponentColor)) {
+            String checkMessage = opponentColor.name() + " is in check!";
+            broadcastToAllPlayers(msg.getGameID(), new ServerMessage(
+                    ServerMessageType.NOTIFICATION,
+                    checkMessage,
+                    null
+            ));
+        }
+
+        if (game.getWinner() != null) {
+            broadcastToAllPlayers(msg.getGameID(), new ServerMessage(
+                    ServerMessageType.NOTIFICATION,
+                    authData.username() + " won the game by checkmate!",
+                    null
+            ));
+        }
+
         return null;
     }
+
+    private String formatPosition(ChessPosition pos) {
+        char file = (char) ('a' + (pos.getColumn() - 1));
+        int rank = pos.getRow();
+        return "" + file + rank;
+    }
+
 
     private Session findSessionByAuthToken(String authToken) {
         for (Map.Entry<Session, String> entry : SESSION_AUTH_TOKENS.entrySet()) {

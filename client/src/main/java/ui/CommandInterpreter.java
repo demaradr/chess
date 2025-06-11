@@ -124,22 +124,51 @@ public class CommandInterpreter {
             case "move" -> {
                 requireWebSocket();
                 requireArgs(args, 3);
+
                 ChessPosition from = parsePosition(args[1]);
-                ChessPosition to = parsePosition(args[2]);
-                webSocketClient.sendMove(from, to);
+
+                String endArg = args[2];
+                ChessPiece.PieceType promotion = null;
+
+                if (endArg.length() == 3) {
+                    promotion = switch (Character.toUpperCase(endArg.charAt(2))) {
+                        case 'Q' -> ChessPiece.PieceType.QUEEN;
+                        case 'R' -> ChessPiece.PieceType.ROOK;
+                        case 'B' -> ChessPiece.PieceType.BISHOP;
+                        case 'N' -> ChessPiece.PieceType.KNIGHT;
+                        default -> throw new ResultException(400, "Invalid promotion piece: " + endArg.charAt(2));
+                    };
+                    endArg = endArg.substring(0, 2);
+                }
+
+                ChessPosition to = parsePosition(endArg);
+
+                if (promotion == null) {
+                    webSocketClient.sendMove(from, to);
+                } else {
+                    webSocketClient.sendPromotionMove(from, to, promotion);
+                }
+
                 yield "Move sent: " + args[1] + " to " + args[2];
             }
+
+
             case "highlight" -> {
                 requireWebSocket();
                 requireArgs(args, 2);
                 ChessPosition position = parsePosition(args[1]);
                 Collection<ChessMove> validMoves = webSocketClient.getGame().validMoves(position);
+
+                if (validMoves == null || validMoves.isEmpty()) {
+                    throw new ResultException(400, "Invalid: There is no piece at this position.");
+                }
                 Set<ChessPosition> destinations = new HashSet<>();
                 for (ChessMove move : validMoves) {
                     destinations.add(move.getEndPosition());
                 }
                 yield drawBoard(webSocketClient.getGame(), webSocketClient.getTeamColor(), destinations);
             }
+
             default -> throw new ResultException(400, "Unknown command: " + input);
         };
     }
@@ -270,11 +299,18 @@ public class CommandInterpreter {
             int col = jOffset + (jMult * j);
             ChessPosition position = new ChessPosition(i, col);
 
+            boolean isBrownSquare = (i + col) % 2 == 0;
+
             if (highlights.contains(position)) {
-                builder.append(EscapeSequences.SET_BG_COLOR_GREEN);
+                if (isBrownSquare) {
+                    builder.append(EscapeSequences.SET_BG_COLOR_GREEN_ON_BROWN);
+                } else {
+                    builder.append(EscapeSequences.SET_BG_COLOR_GREEN_ON_IVORY);
+                }
             } else {
-                builder.append((i + col) % 2 == 0 ? EscapeSequences.SET_BG_COLOR_BROWN : EscapeSequences.SET_BG_COLOR_IVORY);
+                builder.append(isBrownSquare ? EscapeSequences.SET_BG_COLOR_BROWN : EscapeSequences.SET_BG_COLOR_IVORY);
             }
+
 
             var piece = board.getPiece(position);
             builder.append(formatPiece(piece));
@@ -340,8 +376,8 @@ public class CommandInterpreter {
                 \t\033[34;1mcreate <gameName>\033[0m - Create a new game.
                 \t\033[34;1mjoin <gameID> <WHITE|BLACK>\033[0m - Join a game.
                 \t\033[34;1mobserve <gameID>\033[0m - Observe a game.
-                \t\033[34;1mmove <startPos> <endPos>\033[0m - Make a move in the game.
-                \t\033[34;1mhighlight <position>\033[0m - Highlight all valid moves from the given position.
+                \t\033[34;1mmove <startPos> <endPos>[Q|R|B|N]\033[0m - Make a move, with optional promotion (e.g., e7 e8Q).
+                \t\033[34;1mhighlight <position>\033[0m - Highlight valid moves from the position.
                 \t\033[34;1mredraw\033[0m - Reprint the board.
                 \t\033[34;1mleave\033[0m - Leave the game.
                 \t\033[34;1mresign\033[0m - Resign from the game.

@@ -54,7 +54,8 @@ public class EscapeSequences {
     public static final String SET_TEXT_BOLD_AND_BLUE = SET_TEXT_BOLD + SET_TEXT_COLOR_BLUE;
     public static final String SET_TEXT_BOLD_AND_WHITE = SET_TEXT_BOLD + SET_TEXT_COLOR_WHITE;
 
-
+    public static final String SET_BG_COLOR_GREEN_ON_BROWN = "\u001B[42;2m";
+    public static final String SET_BG_COLOR_GREEN_ON_IVORY = "\u001B[102m";
 
     public static final String BLACK_FOREGROUND = "\u001B[30m";
     public static final String RESET_COLOR = "\u001B[0m";

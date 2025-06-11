@@ -2,6 +2,7 @@ package client;
 
 import chess.ChessGame;
 import chess.ChessMove;
+import chess.ChessPiece;
 import chess.ChessPosition;
 import com.google.gson.Gson;
 import ui.CommandInterpreter;
@@ -95,9 +96,6 @@ public class ChessWebSocketClient extends Endpoint {
         sendConnect();
     }
 
-
-
-
     private boolean isConnected() {
         return session != null && session.isOpen();
     }
@@ -153,6 +151,19 @@ public class ChessWebSocketClient extends Endpoint {
             session.getBasicRemote().sendText(gson.toJson(msg));
         } catch (IOException ex) {
             printer.printError("Error sending move: " + ex.getMessage());
+        }
+    }
+
+    public void sendPromotionMove(ChessPosition from, ChessPosition to, ChessPiece.PieceType promotionPiece) {
+        if (!isConnected()) {
+            return;
+        }
+        try {
+            var move = new ChessMove(from, to, promotionPiece);
+            var msg = new ClientMessage(ClientMessage.ClientMessageType.MAKE_MOVE, authToken, gameID, move);
+            session.getBasicRemote().sendText(gson.toJson(msg));
+        } catch (IOException ex) {
+            printer.printError("Error sending promotion move: " + ex.getMessage());
         }
     }
 
