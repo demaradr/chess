@@ -32,7 +32,8 @@ public class ChessWebSocketClient extends Endpoint {
 
     private final Object sessionLock = new Object();
 
-    public ChessWebSocketClient(String url, String authToken, int gameID, String username, ChessGame.TeamColor teamColor, CommandInterpreter interpreter) {
+    public ChessWebSocketClient(String url, String authToken, int gameID, String username,
+                                ChessGame.TeamColor teamColor, CommandInterpreter interpreter) {
         this.authToken = authToken;
         this.gameID = gameID;
         this.username = username;

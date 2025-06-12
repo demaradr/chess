@@ -130,7 +130,6 @@ public class CommandInterpreter {
             case "move" -> {
                 requireWebSocket();
                 requireArgs(args, 3);
-
                 ChessPosition from = parsePosition(args[1]);
                 String endArg = args[2];
                 ChessPiece.PieceType promotion = null;
@@ -147,7 +146,6 @@ public class CommandInterpreter {
                 }
 
                 ChessPosition to = parsePosition(endArg);
-
                 var pieceAtFrom = webSocketClient.getGame().getBoard().getPiece(from);
                 if (pieceAtFrom == null) {
                     throw new ResultException(400, "Invalid move: No piece at " + args[1]);
@@ -155,16 +153,13 @@ public class CommandInterpreter {
                 if (pieceAtFrom.getTeamColor() != webSocketClient.getTeamColor()) {
                     throw new ResultException(400, "Invalid move: That is not your piece.");
                 }
-
                 if (promotion == null) {
                     webSocketClient.sendMove(from, to);
                 } else {
                     webSocketClient.sendPromotionMove(from, to, promotion);
                 }
-
                 yield "Move sent: " + args[1] + " to " + args[2];
             }
-
             case "highlight" -> {
                 requireWebSocket();
                 requireArgs(args, 2);
