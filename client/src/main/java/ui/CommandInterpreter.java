@@ -24,16 +24,17 @@ public class CommandInterpreter {
     private String authToken;
     private ArrayList<Integer> gameIDList;
     private ChessWebSocketClient webSocketClient;
+    private final Scanner scanner;
 
     public CommandInterpreter(ServerFacade facade) {
         this.facade = facade;
         this.gameIDList = new ArrayList<>();
         this.loggedIn = false;
         this.username = LOGGED_OUT;
+        this.scanner = new Scanner(System.in);
     }
 
     public void start() {
-        Scanner scanner = new Scanner(System.in);
         System.out.println("Welcome to Chess client!");
 
         while (true) {
@@ -50,6 +51,7 @@ public class CommandInterpreter {
                 }
             } catch (ResultException ex) {
                 printError(ex);
+                // Continue loop so user can enter input again
             }
         }
     }
@@ -116,17 +118,20 @@ public class CommandInterpreter {
             }
             case "resign" -> {
                 requireWebSocket();
-                webSocketClient.sendResign();
-                webSocketClient.close();
-                webSocketClient = null;
-                yield "You resigned from the game.";
+                System.out.print("Are you sure you want to resign? (yes/no): ");
+                String confirmation = scanner.nextLine().trim().toLowerCase();
+                if ("yes".equals(confirmation)) {
+                    webSocketClient.sendResign();
+                    yield "You resigned from the game.";
+                } else {
+                    yield "Resign canceled. You remain in the game.";
+                }
             }
             case "move" -> {
                 requireWebSocket();
                 requireArgs(args, 3);
 
                 ChessPosition from = parsePosition(args[1]);
-
                 String endArg = args[2];
                 ChessPiece.PieceType promotion = null;
 
@@ -143,6 +148,14 @@ public class CommandInterpreter {
 
                 ChessPosition to = parsePosition(endArg);
 
+                var pieceAtFrom = webSocketClient.getGame().getBoard().getPiece(from);
+                if (pieceAtFrom == null) {
+                    throw new ResultException(400, "Invalid move: No piece at " + args[1]);
+                }
+                if (pieceAtFrom.getTeamColor() != webSocketClient.getTeamColor()) {
+                    throw new ResultException(400, "Invalid move: That is not your piece.");
+                }
+
                 if (promotion == null) {
                     webSocketClient.sendMove(from, to);
                 } else {
@@ -151,7 +164,6 @@ public class CommandInterpreter {
 
                 yield "Move sent: " + args[1] + " to " + args[2];
             }
-
 
             case "highlight" -> {
                 requireWebSocket();
@@ -168,7 +180,6 @@ public class CommandInterpreter {
                 }
                 yield drawBoard(webSocketClient.getGame(), webSocketClient.getTeamColor(), destinations);
             }
-
             default -> throw new ResultException(400, "Unknown command: " + input);
         };
     }
@@ -191,7 +202,7 @@ public class CommandInterpreter {
         int gameID = getGameIdFromList(args[1]);
         ChessGame.TeamColor color = parseColor(args[2]);
         facade.joinGame(new JoinGameRequest(authToken, color.name(), gameID));
-        webSocketClient = new ChessWebSocketClient("ws://localhost:8080", authToken, gameID, username, color);
+        webSocketClient = new ChessWebSocketClient("ws://localhost:8080", authToken, gameID, username, color, this);
 
         try {
             ChessGame game = webSocketClient.getGameLoadedFuture().get();
@@ -205,7 +216,7 @@ public class CommandInterpreter {
     private String observeGame(String[] args) throws ResultException {
         requireArgs(args, 2);
         int gameID = getGameIdFromList(args[1]);
-        webSocketClient = new ChessWebSocketClient("ws://localhost:8080", authToken, gameID, username, null);
+        webSocketClient = new ChessWebSocketClient("ws://localhost:8080", authToken, gameID, username, null, this);
 
         try {
             ChessGame game = webSocketClient.getGameLoadedFuture().get();
@@ -265,7 +276,7 @@ public class CommandInterpreter {
         }
     }
 
-    private String drawBoard(ChessGame game, ChessGame.TeamColor playerColor) {
+    public String drawBoard(ChessGame game, ChessGame.TeamColor playerColor) {
         return drawBoard(game, playerColor, new HashSet<>());
     }
 

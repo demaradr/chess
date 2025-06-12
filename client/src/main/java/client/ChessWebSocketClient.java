@@ -32,15 +32,15 @@ public class ChessWebSocketClient extends Endpoint {
 
     private final Object sessionLock = new Object();
 
-    public ChessWebSocketClient(String url, String authToken, int gameID, String username, ChessGame.TeamColor teamColor) {
+    public ChessWebSocketClient(String url, String authToken, int gameID, String username, ChessGame.TeamColor teamColor, CommandInterpreter interpreter) {
         this.authToken = authToken;
         this.gameID = gameID;
         this.username = username;
         this.teamColor = teamColor;
+        this.interpreter = interpreter;
 
         this.gson = new Gson();
         this.printer = new ConsolePrinter();
-        this.interpreter = null;
 
         try {
             url = url.replace("http", "ws");
@@ -63,7 +63,7 @@ public class ChessWebSocketClient extends Endpoint {
             @Override
             public void onMessage(String message) {
                 try {
-                    String jsonString = null;
+                    String jsonString;
 
                     if (message instanceof String s) {
                         jsonString = s;
@@ -79,11 +79,19 @@ public class ChessWebSocketClient extends Endpoint {
 
                     switch (notification.getServerMessageType()) {
                         case NOTIFICATION -> printer.printNotification(notification.getMessage());
+
                         case LOAD_GAME -> {
                             game = notification.getGame();
-                            gameLoaded.complete(game);
+
+                            if (!gameLoaded.isDone()) {
+                                gameLoaded.complete(game);
+                            } else {
+                                System.out.println("\n" + interpreter.drawBoard(game, teamColor));
+                            }
                         }
+
                         case ERROR -> printer.printError(notification.getErrorMessage());
+
                         default -> printer.printError("Unknown server message type.");
                     }
                 } catch (Exception e) {

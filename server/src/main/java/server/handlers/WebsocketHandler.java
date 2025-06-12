@@ -255,13 +255,18 @@ public class WebsocketHandler {
             ));
         }
         else if (game.isInCheck(opponentColor)) {
-            String checkMessage = opponentColor.name() + " is in check!";
+            String playerInCheckUsername = opponentColor == ChessGame.TeamColor.WHITE
+                    ? gameData.whiteUsername()
+                    : gameData.blackUsername();
+
+            String checkMessage = playerInCheckUsername + " is in check!";
             broadcastToAllPlayers(msg.getGameID(), new ServerMessage(
                     ServerMessageType.NOTIFICATION,
                     checkMessage,
                     null
             ));
         }
+
 
         return null;
     }
@@ -322,7 +327,15 @@ public class WebsocketHandler {
 
         game.setWinner(winnerColor);
 
-        gameDAO.updateGame(gameData);
+        GameData updatedGameData = new GameData(
+                gameData.gameID(),
+                gameData.whiteUsername(),
+                gameData.blackUsername(),
+                gameData.gameName(),
+                game
+        );
+
+        gameDAO.updateGame(updatedGameData);
 
         broadcastToAllPlayers(msg.getGameID(), new ServerMessage(
                 ServerMessageType.NOTIFICATION,
