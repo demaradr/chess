@@ -71,7 +71,7 @@ public class ChessPiece {
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
         return switch (this.type) {
             case BISHOP -> bishopMoves(board, myPosition);
-            case KNIGHT -> null;
+            case KNIGHT -> knightMoves(board, myPosition);
             case QUEEN -> queenMoves(board, myPosition);
             case ROOK -> rookMoves(board, myPosition);
             case KING -> null;
@@ -169,6 +169,36 @@ public class ChessPiece {
             }
         }
         return moves;
+    }
+
+    private Collection<ChessMove> knightMoves(ChessBoard board, ChessPosition position) {
+        List<ChessMove> moves = new ArrayList<>();
+
+        int [][] directions = {
+                {1,2}, {1,-2}, {-1, 2}, {-1,-2},
+                {2,1}, {2,-1}, {-2,1}, {-2,-1}
+        };
+
+        for (int[] dir: directions) {
+            int row = position.getRow() + dir[0];
+            int col = position.getColumn() + dir[1];
+
+            if (row >= 1 && row <= 8 && col >= 1 && col <= 8) {
+                ChessPosition newPosition = new ChessPosition(row, col);
+                ChessPiece current_piece = board.getPiece(newPosition);
+
+                if (current_piece == null) {
+                    moves.add(new ChessMove(position, newPosition, null));
+
+                }
+                else if (current_piece.getTeamColor() != this.getTeamColor()) {
+                    moves.add(new ChessMove(position, newPosition, null));
+                }
+            }
+        }
+        return moves;
+
+
     }
 
     }
