@@ -201,6 +201,33 @@ public class ChessPiece {
 
     }
 
+    private Collection<ChessMove> kingMoves(ChessBoard board, ChessPosition position) {
+        List<ChessMove> moves = new ArrayList<>();
+
+        int[][] directions = {
+                {1, 0}, {-1, 0}, {0, 1}, {0, -1},
+                {1, 1}, {1, -1}, {-1, 1}, {-1, -1}
+        };
+
+        for (int[] dir : directions) {
+            int row = position.getRow() + dir[0];
+            int col = position.getColumn() + dir[1];
+
+            if (row >= 1 && row <= 8 && col >= 1 && col <= 8) {
+                ChessPosition newPosition = new ChessPosition(row, col);
+                ChessPiece current_piece = board.getPiece(newPosition);
+
+                if (current_piece == null) {
+                    moves.add(new ChessMove(position, newPosition, null));
+
+                } else if (current_piece.getTeamColor() != this.getTeamColor()) {
+                    moves.add(new ChessMove(position, newPosition, null));
+                }
+            }
+        }
+        return moves;
+
+
     }
 
-
+}
