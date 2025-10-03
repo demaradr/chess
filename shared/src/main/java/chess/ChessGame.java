@@ -85,17 +85,7 @@ public class ChessGame {
                     }
                 }
             }
-            copy.addPiece(move.getStartPosition(), null);
-
-            ChessPiece.PieceType promotion = move.getPromotionPiece();
-            ChessPiece toPlace;
-            if (promotion != null && piece.getPieceType() == ChessPiece.PieceType.PAWN) {
-                toPlace = new ChessPiece(piece.getTeamColor(), promotion);
-            }
-            else {
-                toPlace = new ChessPiece(piece.getTeamColor(), piece.getPieceType());
-            }
-            copy.addPiece(move.getEndPosition(), toPlace);
+            movePiece(move, piece, copy);
 
             if (!isInCheck(copy, piece.getTeamColor())) {
                 validMove.add(move);
@@ -124,6 +114,12 @@ public class ChessGame {
             throw new InvalidMoveException();
         }
 
+        movePiece(move, piece, board);
+
+        this.teamTurn = (this.teamTurn == TeamColor.WHITE) ? TeamColor.BLACK : TeamColor.WHITE;
+    }
+
+    private void movePiece(ChessMove move, ChessPiece piece, ChessBoard board) {
         board.addPiece(move.getStartPosition(), null);
 
         ChessPiece.PieceType promotion = move.getPromotionPiece();
@@ -134,8 +130,6 @@ public class ChessGame {
             newPiece = new ChessPiece(piece.getTeamColor(), piece.getPieceType());
         }
         board.addPiece(move.getEndPosition(), newPiece);
-
-        this.teamTurn = (this.teamTurn == TeamColor.WHITE) ? TeamColor.BLACK : TeamColor.WHITE;
     }
 
 
@@ -159,20 +153,7 @@ public class ChessGame {
         if (!isInCheck(teamColor)) {
             return false;
         }
-        for (int i = 1; i <= 8; i++) {
-            for (int j = 1; j <= 8; j++) {
-
-                ChessPosition pos = new ChessPosition(i, j);
-                ChessPiece piece = board.getPiece(pos);
-
-                if (piece != null && piece.getTeamColor() == teamColor) {
-                    if (!validMoves(pos).isEmpty()) {
-                        return false;
-                    }
-                }
-            }
-        }
-        return true;
+        return hasMoves(teamColor);
     }
 
     /**
@@ -186,6 +167,10 @@ public class ChessGame {
         if (isInCheck(teamColor)) {
             return false;
         }
+        return hasMoves(teamColor);
+    }
+
+    private boolean hasMoves(TeamColor teamColor) {
         for (int i = 1; i <= 8; i++) {
             for (int j = 1; j <= 8; j++) {
 
