@@ -165,7 +165,7 @@ public class ChessGame {
                 ChessPosition pos = new ChessPosition(i, j);
                 ChessPiece piece = board.getPiece(pos);
 
-                if (piece != null) {
+                if (piece != null && piece.getTeamColor() == teamColor) {
                     if (!validMoves(pos).isEmpty()) {
                         return false;
                     }
