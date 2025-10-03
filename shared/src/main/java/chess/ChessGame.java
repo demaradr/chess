@@ -1,6 +1,8 @@
 package chess;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -64,7 +66,42 @@ public class ChessGame {
      * startPosition
      */
     public Collection<ChessMove> validMoves(ChessPosition startPosition) {
-        throw new RuntimeException("Not implemented");
+        ChessPiece piece = board.getPiece(startPosition);
+        if (piece == null) {
+            return List.of();
+        }
+
+        Collection<ChessMove> moves = piece.pieceMoves(board, startPosition);
+        List<ChessMove> validMove = new ArrayList<>();
+
+        for (ChessMove move : moves) {
+            ChessBoard copy = new ChessBoard();
+            for (int i = 1; i <= 8; i++) {
+                for (int j = 1; j <= 8; j++) {
+                    ChessPosition pos = new ChessPosition(i, j);
+                    ChessPiece p = board.getPiece(pos);
+                    if (p != null) {
+                        copy.addPiece(pos, new ChessPiece(p.getTeamColor(), p.getPieceType()));
+                    }
+                }
+            }
+            copy.addPiece(move.getStartPosition(), null);
+
+            ChessPiece.PieceType promotion = move.getPromotionPiece();
+            ChessPiece toPlace;
+            if (promotion != null && piece.getPieceType() == ChessPiece.PieceType.PAWN) {
+                toPlace = new ChessPiece(piece.getTeamColor(), promotion);
+            }
+            else {
+                toPlace = new ChessPiece(piece.getTeamColor(), piece.getPieceType());
+            }
+            copy.addPiece(move.getEndPosition(), toPlace);
+
+            if (!isInCheck(copy, piece.getTeamColor())) {
+                validMove.add(move);
+            }
+        }
+        return validMove;
     }
 
     /**
