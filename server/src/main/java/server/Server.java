@@ -2,6 +2,7 @@ package server;
 
 import dataaccess.*;
 import handlers.ClearHandler;
+import handlers.RegisterHandler;
 import io.javalin.*;
 
 public class Server {
@@ -11,6 +12,7 @@ public class Server {
     private final GameDAO gameDAO;
     private final AuthDAO authDAO;
     private final ClearHandler clearHandler;
+    private final RegisterHandler registerHandler;
 
     public Server() {
         javalin = Javalin.create(config -> config.staticFiles.add("web"));
@@ -19,6 +21,7 @@ public class Server {
         gameDAO = new MemoryGameDAO();
         authDAO = new MemoryAuthDAO();
         clearHandler = new ClearHandler(userDAO, gameDAO, authDAO);
+        registerHandler = new RegisterHandler(userDAO, authDAO);
 
         // Register your endpoints and exception handlers here.
 
@@ -28,6 +31,7 @@ public class Server {
 
     private void registerEnpoints() {
         javalin.delete("/db", clearHandler::clear);
+        javalin.post("/user", registerHandler::register);
     }
 
     public int run(int desiredPort) {
