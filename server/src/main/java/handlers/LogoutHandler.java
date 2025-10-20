@@ -32,8 +32,12 @@ public class LogoutHandler {
             }
             context.json(new ErrorResponse(message));
         }
+        catch (Exception error) {
+            context.status(500);
+            context.json(new ErrorResponse("Error: " + error.getMessage()));
+        }
     }
 
-    public record ErrorResponse(String message) {};
+    public record ErrorResponse(String message) {}
 
 }
