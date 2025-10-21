@@ -15,6 +15,7 @@ public class Server {
     private final LoginHandler loginHandler;
     private final LogoutHandler logoutHandler;
     private final ListGamesHandler listGamesHandler;
+    private final CreateGameHandler createGameHandler;
 
     public Server() {
         javalin = Javalin.create(config -> config.staticFiles.add("web"));
@@ -27,6 +28,8 @@ public class Server {
         loginHandler = new LoginHandler(userDAO, authDAO);
         logoutHandler = new LogoutHandler(authDAO);
         listGamesHandler = new ListGamesHandler(gameDAO, authDAO);
+        createGameHandler = new CreateGameHandler(gameDAO, authDAO);
+
 
 
         // Register your endpoints and exception handlers here.
@@ -41,6 +44,7 @@ public class Server {
         javalin.post("/session", loginHandler::login);
         javalin.delete("/session", logoutHandler::logout);
         javalin.get("/game", listGamesHandler::list);
+        javalin.post("/game", createGameHandler::createGame);
     }
 
     public int run(int desiredPort) {
