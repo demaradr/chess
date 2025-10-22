@@ -16,6 +16,7 @@ public class Server {
     private final LogoutHandler logoutHandler;
     private final ListGamesHandler listGamesHandler;
     private final CreateGameHandler createGameHandler;
+    private final JoinGameHandler joinGameHandler;
 
     public Server() {
         javalin = Javalin.create(config -> config.staticFiles.add("web"));
@@ -29,6 +30,7 @@ public class Server {
         logoutHandler = new LogoutHandler(authDAO);
         listGamesHandler = new ListGamesHandler(gameDAO, authDAO);
         createGameHandler = new CreateGameHandler(gameDAO, authDAO);
+        joinGameHandler = new JoinGameHandler(gameDAO, authDAO);
 
 
 
@@ -45,6 +47,7 @@ public class Server {
         javalin.delete("/session", logoutHandler::logout);
         javalin.get("/game", listGamesHandler::list);
         javalin.post("/game", createGameHandler::createGame);
+        javalin.put("/game", joinGameHandler::joinGame);
     }
 
     public int run(int desiredPort) {
