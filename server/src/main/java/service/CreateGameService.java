@@ -10,6 +10,8 @@ import models.GameData;
 import service.request.CreateGameRequest;
 import service.results.CreateGameResult;
 
+import java.util.Collection;
+
 public class CreateGameService {
     private final GameDAO gameDAO;
     private final AuthDAO authDAO;
@@ -40,7 +42,14 @@ public class CreateGameService {
             GameData gameData = new GameData(0, null, null, request.gameName(), newGame);
 
             gameDAO.createGame(gameData);
-            int gameID = gameData.gameID();
+            Collection<GameData> allGames = gameDAO.listGames();
+            int gameID = 0;
+            for (GameData game : allGames) {
+                if (game.gameName().equals(request.gameName())) {
+                    gameID = game.gameID();
+                    break;
+                }
+            }
             return new CreateGameResult(gameID);
 
         } catch (DataAccessException e) {

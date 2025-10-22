@@ -35,6 +35,8 @@ public class JoinGameHandler {
             } else if (message.contains("unauthorized")) {
                 context.status(401);
 
+            } else if (message.contains("already taken")) {
+                context.status(403);
             } else {
                 context.status(500);
             }

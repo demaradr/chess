@@ -7,9 +7,16 @@ import java.util.*;
 public class MemoryGameDAO implements GameDAO{
 
     private final Map<Integer, GameData> games = new HashMap<>();
+    private int nextGameID = 1;
+
     @Override
     public void createGame(GameData game) throws DataAccessException {
-        games.put(game.gameID(), game);
+        int gameID = game.gameID();
+        if (gameID <= 0) {
+            gameID = nextGameID++;
+        }
+        GameData newGame = new GameData(gameID, game.whiteUsername(), game.blackUsername(), game.gameName(), game.game());
+        games.put(gameID, newGame);
 
     }
 

@@ -30,7 +30,7 @@ public class RegisterHandler {
             if (message.contains("bad request")) {
                 context.status(400);
             }
-            else if (message.contains("already taken")) {
+            else if (message.contains("already exists")) {
                 context.status(403);
             }
             else {
