@@ -228,6 +228,14 @@ public class ChessGame {
     private boolean isInCheck(ChessBoard board, TeamColor teamColor) {
         ChessPosition kingPos = null;
 
+        kingPos = getChessPosition(board, teamColor, kingPos);
+        if (kingPos == null) {
+            return false;
+        }
+        TeamColor opponent = (teamColor == TeamColor.WHITE) ? TeamColor.BLACK : TeamColor.WHITE;
+        return attackedBy(board, kingPos, opponent);}
+
+    private static ChessPosition getChessPosition(ChessBoard board, TeamColor teamColor, ChessPosition kingPos) {
         for (int i = 1; i <= 8; i++) {
             for (int j = 1; j <= 8; j++) {
                 ChessPosition pos = new ChessPosition(i, j);
@@ -241,9 +249,6 @@ public class ChessGame {
                 break;
             }
         }
-        if (kingPos == null) {
-            return false;
-        }
-        TeamColor opponent = (teamColor == TeamColor.WHITE) ? TeamColor.BLACK : TeamColor.WHITE;
-        return attackedBy(board, kingPos, opponent);}
+        return kingPos;
+    }
 }

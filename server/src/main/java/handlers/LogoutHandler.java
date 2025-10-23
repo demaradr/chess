@@ -28,7 +28,7 @@ public class LogoutHandler {
         catch (ServiceException error) {
             String message = error.getMessage();
 
-            if (message.contains("unauthorized")) {
+            if (message.contains("unauthorized") && !message.isEmpty()) {
                 context.status(401);
             } else {
                 context.status(500);
