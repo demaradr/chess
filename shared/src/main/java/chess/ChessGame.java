@@ -212,13 +212,20 @@ public class ChessGame {
                 ChessPosition pos = new ChessPosition(i, j);
                 ChessPiece piece = board.getPiece(pos);
 
-                if (piece != null && piece.getTeamColor() == attacker) {
+                if (canAttack(board, target, attacker, piece, pos)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
-                    for (ChessMove m : piece.pieceMoves(board, pos)) {
-                        if (m.getEndPosition().equals(target)) {
-                            return true;
-                        }
-                    }
+    private static boolean canAttack(ChessBoard board, ChessPosition target, TeamColor attacker, ChessPiece piece, ChessPosition pos) {
+        if (piece != null && piece.getTeamColor() == attacker) {
+
+            for (ChessMove m : piece.pieceMoves(board, pos)) {
+                if (m.getEndPosition().equals(target)) {
+                    return true;
                 }
             }
         }
