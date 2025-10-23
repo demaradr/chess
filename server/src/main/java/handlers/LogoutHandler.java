@@ -1,4 +1,5 @@
 package handlers;
+import com.google.gson.Gson;
 import dataaccess.AuthDAO;
 import io.javalin.http.Context;
 import service.*;
@@ -9,6 +10,7 @@ public class LogoutHandler {
 
 
     private final LogoutService logoutService;
+    private final Gson gson = new Gson();
     public LogoutHandler(AuthDAO authDAO) {
         this.logoutService = new LogoutService(authDAO);
     }
@@ -20,7 +22,8 @@ public class LogoutHandler {
             LogoutResult result = logoutService.logout(request);
 
             context.status(200);
-            context.json(result);
+            context.result(gson.toJson(result));
+            context.contentType("application/json");
         }
         catch (ServiceException error) {
             String message = error.getMessage();
@@ -30,11 +33,13 @@ public class LogoutHandler {
             } else {
                 context.status(500);
             }
-            context.json(new ErrorResponse(message));
+            context.result(gson.toJson(new ErrorResponse(message)));
+            context.contentType("application/json");
         }
         catch (Exception error) {
             context.status(500);
-            context.json(new ErrorResponse("Error: " + error.getMessage()));
+            context.result(gson.toJson(new ErrorResponse("Error: " + error.getMessage())));
+            context.contentType("application/json");
         }
     }
 

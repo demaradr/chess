@@ -25,7 +25,8 @@ public class CreateGameHandler {
             CreateGameRequest request = gson.fromJson(context.body(), CreateGameRequest.class);
             CreateGameResult result = createGameService.createGame(request, authToken);
             context.status(200);
-            context.json(result);
+            context.result(gson.toJson(result));
+            context.contentType("application/json");
         }
         catch (ServiceException error) {
             String message = error.getMessage();
@@ -38,11 +39,13 @@ public class CreateGameHandler {
             } else {
                 context.status(500);
             }
-            context.json(new ClearHandler.ErrorResponse(message));
+            context.result(gson.toJson(new ClearHandler.ErrorResponse(message)));
+            context.contentType("application/json");
         }
         catch (Exception error) {
             context.status(500);
-            context.json(new ClearHandler.ErrorResponse("Error: " + error.getMessage()));
+            context.result(gson.toJson(new ClearHandler.ErrorResponse("Error: " + error.getMessage())));
+            context.contentType("application/json");
         }
         }
     }

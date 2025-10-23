@@ -1,4 +1,5 @@
 package handlers;
+import com.google.gson.Gson;
 import dataaccess.AuthDAO;
 import dataaccess.GameDAO;
 import io.javalin.http.Context;
@@ -9,6 +10,7 @@ public class ListGamesHandler {
 
 
     private final ListGamesService listGamesService;
+    private final Gson gson = new Gson();
     public ListGamesHandler(GameDAO gameDAO, AuthDAO authDAO) {
         this.listGamesService = new ListGamesService(gameDAO, authDAO);
     }
@@ -18,7 +20,8 @@ public class ListGamesHandler {
             String authToken = context.header("authorization");
             ListGamesResult result = listGamesService.listGames(authToken);
             context.status(200);
-            context.json(result);
+            context.result(gson.toJson(result));
+            context.contentType("application/json");
         }
         catch (ServiceException error) {
             String message = error.getMessage();
@@ -30,12 +33,14 @@ public class ListGamesHandler {
                 context.status(500);
             }
 
-            context.json(new ErrorResponse(message));
+            context.result(gson.toJson(new ErrorResponse(message)));
+            context.contentType("application/json");
         }
         catch (Exception error) {
 
             context.status(500);
-            context.json(new ErrorResponse("Error: " + error.getMessage()));
+            context.result(gson.toJson(new ErrorResponse("Error: " + error.getMessage())));
+            context.contentType("application/json");
         }
     }
 

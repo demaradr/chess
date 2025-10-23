@@ -25,7 +25,7 @@ public class LoginService {
                 throw new ServiceException("Error: bad request");
             }
 
-            if (request.username().trim().isEmpty() || request.password().trim().isEmpty()) {
+            if (request.username().isEmpty() || request.password().isEmpty()) {
                 throw new ServiceException("Error: bad request");
             }
             UserData user = userDAO.getUser(request.username());

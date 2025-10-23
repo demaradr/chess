@@ -25,7 +25,8 @@ public class JoinGameHandler {
             JoinGameRequest request = gson.fromJson(context.body(), JoinGameRequest.class);
             JoinGameResult result = joinGameService.joinGame(request, authToken);
             context.status(200);
-            context.json(result);
+            context.result(gson.toJson(result));
+            context.contentType("application/json");
         }
         catch (ServiceException e) {
             String message = e.getMessage();
@@ -40,11 +41,13 @@ public class JoinGameHandler {
             } else {
                 context.status(500);
             }
-            context.json(new ClearHandler.ErrorResponse(message));
+            context.result(gson.toJson(new ClearHandler.ErrorResponse(message)));
+            context.contentType("application/json");
         }
         catch (Exception e) {
             context.status(500);
-            context.json(new ClearHandler.ErrorResponse("Error: " + e.getMessage()));
+            context.result(gson.toJson(new ClearHandler.ErrorResponse("Error: " + e.getMessage())));
+            context.contentType("application/json");
         }
     }
 

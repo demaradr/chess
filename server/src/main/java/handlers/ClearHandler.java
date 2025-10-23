@@ -1,5 +1,6 @@
 package handlers;
 
+import com.google.gson.Gson;
 import dataaccess.AuthDAO;
 import dataaccess.DataAccessException;
 import dataaccess.GameDAO;
@@ -9,6 +10,7 @@ import service.ClearService;
 
 public class ClearHandler {
     private final ClearService clearService;
+    private final Gson gson = new Gson();
 
     public ClearHandler(UserDAO userDAO, GameDAO gameDAO, AuthDAO authDAO) {
         this.clearService = new ClearService(userDAO, gameDAO, authDAO);
@@ -20,15 +22,13 @@ public class ClearHandler {
         try {
             clearService.clear();
             context.status(200);
-            context.json(new ClearResponse());
-        }
-        catch (DataAccessException error) {
-            context.status(500);
-            context.json(new ErrorResponse(error.getMessage()));
+            context.result(gson.toJson(new ClearResponse()));
+            context.contentType("application/json");
         }
         catch (Exception excep) {
             context.status(500);
-            context.json(new ErrorResponse(excep.getMessage()));
+            context.result(gson.toJson(new ErrorResponse(excep.getMessage())));
+            context.contentType("application/json");
         }
 
     }

@@ -141,13 +141,13 @@ public class ChessPiece {
 
             if (row >= 1 && row <= 8 && col >= 1 && col <= 8) {
                 ChessPosition newPosition = new ChessPosition(row, col);
-                ChessPiece current_piece = board.getPiece(newPosition);
+                ChessPiece currentPiece = board.getPiece(newPosition);
 
-                if (current_piece == null) {
+                if (currentPiece == null) {
                     moves.add(new ChessMove(position, newPosition, null));
 
                 }
-                else if (current_piece.getTeamColor() != this.getTeamColor()) {
+                else if (currentPiece.getTeamColor() != this.getTeamColor()) {
                     moves.add(new ChessMove(position, newPosition, null));
                 }
             }
@@ -161,13 +161,13 @@ public class ChessPiece {
 
             while(row >= 1 && row <= 8 && col >= 1 && col <= 8) {
                 ChessPosition newPosition = new ChessPosition(row, col);
-                ChessPiece current_piece = board.getPiece(newPosition);
-                if (current_piece == null) {
+                ChessPiece currentPiece = board.getPiece(newPosition);
+                if (currentPiece == null) {
                     moves.add(new ChessMove(position, newPosition, null));
                 }
 
                 else {
-                    if (current_piece.getTeamColor() != this.getTeamColor()) {
+                    if (currentPiece.getTeamColor() != this.getTeamColor()) {
                         moves.add(new ChessMove(position, newPosition, null));
                     }
                     break;
@@ -184,31 +184,31 @@ public class ChessPiece {
         List<ChessMove> moves = new ArrayList<>();
 
         int directions;
-        int start_position;
+        int startPosition;
         int promotion;
         if (this.getTeamColor() == ChessGame.TeamColor.WHITE) {
             directions = 1;
-            start_position = 2;
+            startPosition = 2;
             promotion = 8;
         }
         else {
             directions = -1;
-            start_position = 7;
+            startPosition = 7;
             promotion = 1;
         }
 
         int row = position.getRow();
         int col = position.getColumn();
 
-        int move_forward = row + directions;
-        if(isInBoard(move_forward, col) && board.getPiece(new ChessPosition(move_forward, col)) == null) {
-            ChessPosition newPosition = new ChessPosition(move_forward, col);
+        int moveForward = row + directions;
+        if(isInBoard(moveForward, col) && board.getPiece(new ChessPosition(moveForward, col)) == null) {
+            ChessPosition newPosition = new ChessPosition(moveForward, col);
             moveOrPromotion(position, moves, promotion, newPosition);
 
-            if (row == start_position) {
-                int double_move = row + 2 * directions;
-                if (isInBoard(double_move, col) && board.getPiece(new ChessPosition(double_move,col)) == null) {
-                    moves.add(new ChessMove(position, new ChessPosition(double_move, col), null));
+            if (row == startPosition) {
+                int doubleMove = row + 2 * directions;
+                if (isInBoard(doubleMove, col) && board.getPiece(new ChessPosition(doubleMove,col)) == null) {
+                    moves.add(new ChessMove(position, new ChessPosition(doubleMove, col), null));
                 }
             }
             }
@@ -217,13 +217,13 @@ public class ChessPiece {
                 {directions, 1}, {directions, -1}
         };
         for (int[] capt : capture) {
-            int capture_row = row + capt[0];
-            int capture_col = col + capt[1];
-            if (isInBoard(capture_row, capture_col)) {
-                ChessPosition newPosition2 = new ChessPosition(capture_row, capture_col);
-                ChessPiece current_piece = board.getPiece(newPosition2);
+            int captureRow = row + capt[0];
+            int captureCol = col + capt[1];
+            if (isInBoard(captureRow, captureCol)) {
+                ChessPosition newPosition2 = new ChessPosition(captureRow, captureCol);
+                ChessPiece currentPiece = board.getPiece(newPosition2);
 
-                if (current_piece != null && current_piece.getTeamColor() != this.getTeamColor()) {
+                if (currentPiece != null && currentPiece.getTeamColor() != this.getTeamColor()) {
                     moveOrPromotion(position, moves, promotion, newPosition2);
                 }
             }

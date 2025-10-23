@@ -23,7 +23,8 @@ public class RegisterHandler {
             RegisterRequest request = gson.fromJson(context.body(), RegisterRequest.class);
             RegisterResult result = registerService.register(request);
             context.status(200);
-            context.json(result);
+            context.result(gson.toJson(result));
+            context.contentType("application/json");
         }
         catch (ServiceException e) {
             String message = e.getMessage();
@@ -36,11 +37,13 @@ public class RegisterHandler {
             else {
                 context.status(500);
             }
-            context.json(new ErrorResponse(message));
+            context.result(gson.toJson(new ErrorResponse(message)));
+            context.contentType("application/json");
         }
-        catch (Exception e) {
+        catch (Exception error) {
             context.status(500);
-            context.json(new ErrorResponse("Error: " + e.getMessage()));
+            context.result(gson.toJson(new ErrorResponse("Error: " + error.getMessage())));
+            context.contentType("application/json");
         }
     }
 

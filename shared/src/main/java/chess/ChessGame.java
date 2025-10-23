@@ -237,7 +237,9 @@ public class ChessGame {
                     break;
                 }
             }
-            if (kingPos != null) break;
+            if (kingPos != null) {
+                break;
+            }
         }
         if (kingPos == null) {
             return false;
