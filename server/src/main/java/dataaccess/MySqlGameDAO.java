@@ -1,5 +1,6 @@
 package dataaccess;
 
+import com.google.gson.Gson;
 import models.GameData;
 
 import java.sql.Connection;
@@ -10,8 +11,18 @@ import java.util.Collection;
 import java.util.List;
 
 public class MySqlGameDAO implements GameDAO{
+
+    private final Gson gson = new Gson();
+
+    public MySqlGameDAO() throws DataAccessException {
+        configureDatabase();
+    }
+
     @Override
     public void createGame(GameData game) throws DataAccessException {
+        String sql = "INSERT INTO game (whiteUsername, blackUsername, gameName, game) VALUES (?, ?, ?, ?,)";
+        String json = gson.toJson(game.game());
+        updateData(sql, game.whiteUsername(), game.blackUsername(), game.gameName(), json);
 
     }
 
