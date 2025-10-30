@@ -60,4 +60,27 @@ public class SqlGameDAOTests {
         GameData fetdchedGame = gameDAO.getGame(21);
         assertNull(fetdchedGame);
     }
+
+
+    @Test
+    public void listGamesPositive() throws DataAccessException {
+        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame2 = new ChessGame();
+        GameData game = new GameData(0, "white", "black", "test game", chessGame);
+        GameData game2 = new GameData(1, "white2", "black2", "test game2", chessGame2);
+        gameDAO.createGame(game);
+        gameDAO.createGame(game2);
+
+        Collection<GameData> games = gameDAO.listGames();
+        assertEquals(2, games.size());
+    }
+
+    @Test
+    public void listGamesNegative() throws DataAccessException {
+        gameDAO.clear();
+
+        Collection<GameData> games = gameDAO.listGames();
+        assertNotEquals(2, games.size());
+
+    }
 }

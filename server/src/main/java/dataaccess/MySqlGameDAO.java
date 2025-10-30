@@ -45,7 +45,25 @@ public class MySqlGameDAO implements GameDAO{
 
     @Override
     public Collection<GameData> listGames() throws DataAccessException {
-        return List.of();
+        Collection<GameData> listOfGames = new ArrayList<>();
+
+        try (Connection conn = DatabaseManager.getConnection()) {
+            String sql = "SELECT gameID, whiteUsername, blackUsername, gameName, game FROM games";
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                try(ResultSet rs = ps.executeQuery()) {
+
+                    while (rs.next()) {
+                        listOfGames.add(readGame(rs));
+                    }}
+            }
+        }
+
+
+        catch (SQLException error) {
+            throw new DataAccessException((error.getMessage()));
+        }
+
+        return listOfGames;
     }
 
     @Override
