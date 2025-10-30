@@ -5,6 +5,8 @@ import models.GameData;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collection;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class SqlGameDAOTests {
@@ -83,4 +85,33 @@ public class SqlGameDAOTests {
         assertNotEquals(2, games.size());
 
     }
+
+
+    @Test
+    public void updateGamePositive() throws DataAccessException {
+        ChessGame chessGame = new ChessGame();
+        GameData game = new GameData(1, "white", "black", "test game", chessGame);
+        gameDAO.createGame(game);
+
+        ChessGame updatedGame = new ChessGame();
+        updatedGame.setTeamTurn(ChessGame.TeamColor.BLACK);
+        GameData updatedGame2 = new GameData(1, "john", "aitana", "test game", updatedGame);
+        gameDAO.updateGame(updatedGame2);
+        GameData fetchedGame = gameDAO.getGame(game.gameID());
+        assertEquals("john", fetchedGame.whiteUsername());
+        assertEquals("aitana", fetchedGame.blackUsername());
+
+
+
+    }
+
+
+    @Test
+    public void updateGameNegative() throws DataAccessException {
+        ChessGame chessGame = new ChessGame();
+        GameData game = new GameData(213, "white", "black","game", chessGame);
+        assertDoesNotThrow(() -> gameDAO.updateGame(game));
+
+    }
+
 }

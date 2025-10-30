@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import models.GameData;
 
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -69,6 +70,11 @@ public class MySqlGameDAO implements GameDAO{
     @Override
     public void updateGame(GameData game) throws DataAccessException {
 
+        String sql = "UPDATE games SET whiteUsername=?, blackUsername = ?, gameName= ?, game=? WHERE gameID = ?";
+        String json = gson.toJson(game.game());
+
+        updateData(sql, game.whiteUsername(), game.blackUsername(),game.gameName(), json, game.gameID());
+
     }
 
     @Override
@@ -103,6 +109,9 @@ public class MySqlGameDAO implements GameDAO{
                     if (param instanceof String p) {
                         ps.setString(i + 1, p);
 
+                    }
+                    else if (param instanceof Integer p){
+                        ps.setInt(i + 1, p);
                     }
                     else if (param == null) {
                         ps.setNull(i + 1, Types.NULL);
