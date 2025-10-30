@@ -1,12 +1,10 @@
 package dataaccess;
 
+import chess.ChessGame;
 import com.google.gson.Gson;
 import models.GameData;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Types;
+import java.sql.*;
 import java.util.Collection;
 import java.util.List;
 
@@ -20,7 +18,7 @@ public class MySqlGameDAO implements GameDAO{
 
     @Override
     public void createGame(GameData game) throws DataAccessException {
-        String sql = "INSERT INTO game (whiteUsername, blackUsername, gameName, game) VALUES (?, ?, ?, ?,)";
+        String sql = "INSERT INTO games (whiteUsername, blackUsername, gameName, game) VALUES (?, ?, ?, ?)";
         String json = gson.toJson(game.game());
         updateData(sql, game.whiteUsername(), game.blackUsername(), game.gameName(), json);
 
@@ -28,6 +26,20 @@ public class MySqlGameDAO implements GameDAO{
 
     @Override
     public GameData getGame(int gameID) throws DataAccessException {
+        try (Connection conn = DatabaseManager.getConnection()) {
+            String sql = "SELECT * FROM games WHERE gameID=?";
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, gameID);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return readGame(rs);
+                    }
+                }
+            }
+        }
+        catch (SQLException error) {
+            throw new DataAccessException(error.getMessage());
+        }
         return null;
     }
 
@@ -43,6 +55,23 @@ public class MySqlGameDAO implements GameDAO{
 
     @Override
     public void clear() throws DataAccessException {
+        String sql = "TRUNCATE TABLE games";
+        updateData(sql);
+
+    }
+
+
+    private GameData readGame(ResultSet rs) throws SQLException {
+        int gameID = rs.getInt("gameID");
+        String whiteUsername = rs.getString("whiteUsername");
+        String blackUsername = rs.getString("blackUsername");
+        String gameName = rs.getString("gameName");
+        String json = rs.getString("game");
+
+        ChessGame chessGame = gson.fromJson(json, ChessGame.class);
+        return new GameData(gameID, whiteUsername, blackUsername, gameName, chessGame);
+
+
 
     }
 
@@ -89,6 +118,9 @@ public class MySqlGameDAO implements GameDAO{
     private void configureDatabase() throws DataAccessException {
         DatabaseManager.createDatabase();
         try (Connection conn = DatabaseManager.getConnection()) {
+            try (PreparedStatement drop = conn.prepareStatement("DROP TABLE IF EXISTS games")) {
+                drop.executeUpdate();
+            }
             for (String statement : createStatements) {
                 try (PreparedStatement ps = conn.prepareStatement(statement)) {
                     ps.executeUpdate();

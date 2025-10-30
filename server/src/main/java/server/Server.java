@@ -21,8 +21,13 @@ public class Server {
     public Server() {
         javalin = Javalin.create(config -> config.staticFiles.add("web"));
 
-        userDAO = new MemoryUserDAO();
-        gameDAO = new MemoryGameDAO();
+        try {
+            userDAO = new MySqlUserDAO();
+            gameDAO = new MySqlGameDAO();
+        } catch (DataAccessException e) {
+            throw new RuntimeException(e);
+        }
+
         authDAO = new MemoryAuthDAO();
         clearHandler = new ClearHandler(userDAO, gameDAO, authDAO);
         registerHandler = new RegisterHandler(userDAO, authDAO);
