@@ -85,7 +85,7 @@ public class MySqlAuthDAO implements AuthDAO{
             """
             CREATE TABLE IF NOT EXISTS auth (
                 authToken VARCHAR(255) NOT NULL,
-                username VARCHAR(255) NOT NULL,
+                username VARCHAR(255) NOT NULL
                 )
             """
     };

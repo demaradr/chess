@@ -24,11 +24,11 @@ public class Server {
         try {
             userDAO = new MySqlUserDAO();
             gameDAO = new MySqlGameDAO();
+            authDAO = new MySqlAuthDAO();
         } catch (DataAccessException e) {
             throw new RuntimeException(e);
         }
 
-        authDAO = new MemoryAuthDAO();
         clearHandler = new ClearHandler(userDAO, gameDAO, authDAO);
         registerHandler = new RegisterHandler(userDAO, authDAO);
         loginHandler = new LoginHandler(userDAO, authDAO);
