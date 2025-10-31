@@ -74,4 +74,48 @@ public class DatabaseManager {
         var port = Integer.parseInt(props.getProperty("db.port"));
         connectionUrl = String.format("jdbc:mysql://%s:%d", host, port);
     }
+
+
+    public static int updateData(String statement, Object... params) throws DataAccessException {
+        try (Connection conn = DatabaseManager.getConnection()) {
+            try (PreparedStatement ps = conn.prepareStatement(statement)) {
+                for (int i = 0; i < params.length; i++) {
+                    Object param = params[i];
+
+                    if (param instanceof String p) {
+                        ps.setString(i + 1, p);
+
+                    }
+                    else if (param instanceof Integer p){
+                        ps.setInt(i + 1, p);
+                    }
+                    else if (param == null) {
+                        ps.setNull(i + 1, Types.NULL);
+                    }
+                }
+                ps.executeUpdate();
+                return 0;
+            }
+        }
+        catch (SQLException error) {
+            throw new DataAccessException(error.getMessage());
+        }
+    }
+
+
+    public static void configureDatabase(String[] createStatements) throws DataAccessException {
+        DatabaseManager.createDatabase();
+        try (Connection conn = DatabaseManager.getConnection()) {
+
+            for (String statement : createStatements) {
+                try (PreparedStatement ps = conn.prepareStatement(statement)) {
+                    ps.executeUpdate();
+                }
+            }
+        }
+        catch (SQLException error) {
+            throw new DataAccessException(error.getMessage());
+        }
+    }
+
 }

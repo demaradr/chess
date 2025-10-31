@@ -2,18 +2,19 @@ package dataaccess;
 
 import models.AuthData;
 
+import javax.xml.crypto.Data;
 import java.sql.*;
 
 public class MySqlAuthDAO implements AuthDAO{
     public MySqlAuthDAO () throws DataAccessException {
-        configureDatabase();
+        DatabaseManager.configureDatabase(createStatements);
     }
 
 
     @Override
     public void createAuth(AuthData auth) throws DataAccessException {
         String sql = "INSERT INTO auth (authToken, username) VALUES (?, ?)";
-        updateData(sql, auth.authToken(), auth.username());
+        DatabaseManager.updateData(sql, auth.authToken(), auth.username());
 
     }
 
@@ -43,40 +44,18 @@ public class MySqlAuthDAO implements AuthDAO{
     @Override
     public void deleteAuth(String authToken) throws DataAccessException {
         String sql = "DELETE FROM auth WHERE authToken=?";
-        updateData(sql, authToken);
+        DatabaseManager.updateData(sql, authToken);
 
     }
 
     @Override
     public void clear() throws DataAccessException {
         String sql = "TRUNCATE TABLE auth";
-        updateData(sql);
+        DatabaseManager.updateData(sql);
 
     }
 
 
-    private int updateData(String statement, Object... params) throws DataAccessException {
-        try (Connection conn = DatabaseManager.getConnection()) {
-            try (PreparedStatement ps = conn.prepareStatement(statement)) {
-                for (int i = 0; i < params.length; i++) {
-                    Object param = params[i];
-
-                    if (param instanceof String p) {
-                        ps.setString(i + 1, p);
-
-                    }
-                    else if (param == null) {
-                        ps.setNull(i + 1, Types.NULL);
-                    }
-                }
-                ps.executeUpdate();
-                return 0;
-            }
-        }
-        catch (SQLException error) {
-            throw new DataAccessException(error.getMessage());
-        }
-    }
 
 
 
@@ -90,17 +69,7 @@ public class MySqlAuthDAO implements AuthDAO{
             """
     };
 
-    private void configureDatabase() throws DataAccessException {
-        DatabaseManager.createDatabase();
-        try (Connection conn = DatabaseManager.getConnection()) {
-            for (String statement : createStatements) {
-                try (PreparedStatement ps = conn.prepareStatement(statement)) {
-                    ps.executeUpdate();
-                }
-            }
-        }
-        catch (SQLException error) {
-            throw new DataAccessException(error.getMessage());
-        }
-    }
+
+
+
 }

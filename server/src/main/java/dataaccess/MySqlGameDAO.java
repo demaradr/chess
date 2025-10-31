@@ -7,21 +7,21 @@ import models.GameData;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 public class MySqlGameDAO implements GameDAO{
 
     private final Gson gson = new Gson();
 
     public MySqlGameDAO() throws DataAccessException {
-        configureDatabase();
+        DatabaseManager.configureDatabase(createStatements);
+
     }
 
     @Override
     public void createGame(GameData game) throws DataAccessException {
         String sql = "INSERT INTO games (whiteUsername, blackUsername, gameName, game) VALUES (?, ?, ?, ?)";
         String json = gson.toJson(game.game());
-        updateData(sql, game.whiteUsername(), game.blackUsername(), game.gameName(), json);
+        DatabaseManager.updateData(sql, game.whiteUsername(), game.blackUsername(), game.gameName(), json);
 
     }
 
@@ -73,14 +73,14 @@ public class MySqlGameDAO implements GameDAO{
         String sql = "UPDATE games SET whiteUsername=?, blackUsername = ?, gameName= ?, game=? WHERE gameID = ?";
         String json = gson.toJson(game.game());
 
-        updateData(sql, game.whiteUsername(), game.blackUsername(),game.gameName(), json, game.gameID());
+        DatabaseManager.updateData(sql, game.whiteUsername(), game.blackUsername(),game.gameName(), json, game.gameID());
 
     }
 
     @Override
     public void clear() throws DataAccessException {
         String sql = "TRUNCATE TABLE games";
-        updateData(sql);
+        DatabaseManager.updateData(sql);
 
     }
 
@@ -100,31 +100,6 @@ public class MySqlGameDAO implements GameDAO{
     }
 
 
-    private int updateData(String statement, Object... params) throws DataAccessException {
-        try (Connection conn = DatabaseManager.getConnection()) {
-            try (PreparedStatement ps = conn.prepareStatement(statement)) {
-                for (int i = 0; i < params.length; i++) {
-                    Object param = params[i];
-
-                    if (param instanceof String p) {
-                        ps.setString(i + 1, p);
-
-                    }
-                    else if (param instanceof Integer p){
-                        ps.setInt(i + 1, p);
-                    }
-                    else if (param == null) {
-                        ps.setNull(i + 1, Types.NULL);
-                    }
-                }
-                ps.executeUpdate();
-                return 0;
-            }
-        }
-        catch (SQLException error) {
-            throw new DataAccessException(error.getMessage());
-        }
-    }
 
 
 
@@ -142,18 +117,4 @@ public class MySqlGameDAO implements GameDAO{
             """
     };
 
-    private void configureDatabase() throws DataAccessException {
-        DatabaseManager.createDatabase();
-        try (Connection conn = DatabaseManager.getConnection()) {
-
-            for (String statement : createStatements) {
-                try (PreparedStatement ps = conn.prepareStatement(statement)) {
-                    ps.executeUpdate();
-                }
-            }
-        }
-        catch (SQLException error) {
-            throw new DataAccessException(error.getMessage());
-        }
-    }
 }

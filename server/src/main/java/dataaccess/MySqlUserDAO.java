@@ -8,14 +8,14 @@ import java.sql.*;
 public class MySqlUserDAO implements UserDAO{
 
     public MySqlUserDAO() throws DataAccessException {
-        configureDatabase();
+        DatabaseManager.configureDatabase(createStatements);
     }
 
     @Override
     public void createUser(UserData u) throws DataAccessException {
         String sql = "INSERT INTO users (username, password, email) VALUES (?, ?, ?)";
         String hashedPassword = BCrypt.hashpw(u.password(), BCrypt.gensalt());
-        updateData(sql, u.username(), hashedPassword, u.email());
+        DatabaseManager.updateData(sql, u.username(), hashedPassword, u.email());
 
 
     }
@@ -46,33 +46,11 @@ public class MySqlUserDAO implements UserDAO{
     @Override
     public void clear() throws DataAccessException {
         String sql = "TRUNCATE TABLE users";
-        updateData(sql);
+        DatabaseManager.updateData(sql);
 
     }
 
 
-    private int updateData(String statement, Object... params) throws DataAccessException {
-        try (Connection conn = DatabaseManager.getConnection()) {
-            try (PreparedStatement ps = conn.prepareStatement(statement)) {
-                for (int i = 0; i < params.length; i++) {
-                    Object param = params[i];
-
-                    if (param instanceof String p) {
-                        ps.setString(i + 1, p);
-
-                    }
-                    else if (param == null) {
-                        ps.setNull(i + 1, Types.NULL);
-                    }
-                }
-                ps.executeUpdate();
-                return 0;
-            }
-        }
-        catch (SQLException error) {
-            throw new DataAccessException(error.getMessage());
-        }
-    }
 
 
 
@@ -87,17 +65,8 @@ public class MySqlUserDAO implements UserDAO{
             """
     };
 
-    private void configureDatabase() throws DataAccessException {
-        DatabaseManager.createDatabase();
-        try (Connection conn = DatabaseManager.getConnection()) {
-            for (String statement : createStatements) {
-                try (PreparedStatement ps = conn.prepareStatement(statement)) {
-                    ps.executeUpdate();
-                }
-            }
-        }
-        catch (SQLException error) {
-            throw new DataAccessException(error.getMessage());
-        }
+
+
+
     }
-}
+
