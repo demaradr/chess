@@ -5,6 +5,7 @@ import dataaccess.DataAccessException;
 import dataaccess.UserDAO;
 import models.AuthData;
 import models.UserData;
+import org.mindrot.jbcrypt.BCrypt;
 import service.request.LoginRequest;
 import service.results.LoginResult;
 
@@ -32,7 +33,7 @@ public class LoginService {
             if (user == null) {
                 throw new ServiceException("Error: unauthorized");
             }
-            if (!user.password().equals(request.password())) {
+            if (!BCrypt.checkpw(request.password(), user.password())) {
                 throw new ServiceException("Error: unauthorized");
             }
             String authToken = AuthDAO.generateToken();

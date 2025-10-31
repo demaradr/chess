@@ -27,7 +27,7 @@ public class ClearHandler {
         }
         catch (Exception excep) {
             context.status(500);
-            context.result(gson.toJson(new ErrorResponse(excep.getMessage())));
+            context.result(gson.toJson(new ErrorResponse("Error" + excep.getMessage())));
             context.contentType("application/json");
         }
 

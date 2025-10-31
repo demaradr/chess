@@ -28,6 +28,6 @@ public class LogoutService {
             return new LogoutResult();
 
         } catch (DataAccessException error) {
-            throw new ServiceException(("Eror: " + error.getMessage()));
+            throw new ServiceException(("Error: " + error.getMessage()));
     }}
 }

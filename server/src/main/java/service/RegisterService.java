@@ -29,6 +29,13 @@ public class RegisterService {
                 throw new ServiceException("Error: bad request");
             }
 
+            UserData currUser = userDAO.getUser(request.username());
+            if (currUser != null) {
+
+                throw new ServiceException("Error: already exists");
+
+            }
+
             UserData user = new UserData(request.username(), request.password(), request.email());
 
             userDAO.createUser(user);

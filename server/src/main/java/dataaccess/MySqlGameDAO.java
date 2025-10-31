@@ -145,9 +145,7 @@ public class MySqlGameDAO implements GameDAO{
     private void configureDatabase() throws DataAccessException {
         DatabaseManager.createDatabase();
         try (Connection conn = DatabaseManager.getConnection()) {
-            try (PreparedStatement drop = conn.prepareStatement("DROP TABLE IF EXISTS games")) {
-                drop.executeUpdate();
-            }
+
             for (String statement : createStatements) {
                 try (PreparedStatement ps = conn.prepareStatement(statement)) {
                     ps.executeUpdate();
