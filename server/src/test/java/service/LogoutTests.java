@@ -4,7 +4,7 @@ import dataaccess.MemoryAuthDAO;
 import models.AuthData;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import service.request.LogoutRequest;
+import request.LogoutRequest;
 
 import static org.junit.jupiter.api.Assertions.*;
 

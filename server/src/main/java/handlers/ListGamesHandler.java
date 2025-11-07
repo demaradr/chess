@@ -4,7 +4,7 @@ import dataaccess.AuthDAO;
 import dataaccess.GameDAO;
 import io.javalin.http.Context;
 import service.*;
-import service.results.ListGamesResult;
+import results.ListGamesResult;
 
 public class ListGamesHandler {
 

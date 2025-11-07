@@ -3,7 +3,7 @@ import dataaccess.*;
 import models.UserData;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import service.request.LoginRequest;
+import request.LoginRequest;
 
 import static org.junit.jupiter.api.Assertions.*;
 

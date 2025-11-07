@@ -6,7 +6,7 @@ import dataaccess.MemoryUserDAO;
 import dataaccess.UserDAO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import service.request.RegisterRequest;
+import request.RegisterRequest;
 
 import static org.junit.jupiter.api.Assertions.*;
 

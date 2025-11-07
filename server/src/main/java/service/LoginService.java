@@ -6,8 +6,8 @@ import dataaccess.UserDAO;
 import models.AuthData;
 import models.UserData;
 import org.mindrot.jbcrypt.BCrypt;
-import service.request.LoginRequest;
-import service.results.LoginResult;
+import request.LoginRequest;
+import results.LoginResult;
 
 public class LoginService {
 

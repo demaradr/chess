@@ -3,8 +3,8 @@ import com.google.gson.Gson;
 import dataaccess.AuthDAO;
 import io.javalin.http.Context;
 import service.*;
-import service.request.LogoutRequest;
-import service.results.LogoutResult;
+import request.LogoutRequest;
+import results.LogoutResult;
 
 public class LogoutHandler {
 

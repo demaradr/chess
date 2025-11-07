@@ -6,8 +6,8 @@ import dataaccess.UserDAO;
 import io.javalin.http.Context;
 import service.RegisterService;
 import service.ServiceException;
-import service.request.RegisterRequest;
-import service.results.RegisterResult;
+import request.RegisterRequest;
+import results.RegisterResult;
 
 public class RegisterHandler {
 

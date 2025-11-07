@@ -5,8 +5,8 @@ import dataaccess.AuthDAO;
 import dataaccess.GameDAO;
 import io.javalin.http.Context;
 import service.JoinGameService;
-import service.request.JoinGameRequest;
-import service.results.JoinGameResult;
+import request.JoinGameRequest;
+import results.JoinGameResult;
 import service.ServiceException;
 
 public class JoinGameHandler {

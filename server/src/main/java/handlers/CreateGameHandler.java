@@ -6,8 +6,8 @@ import dataaccess.GameDAO;
 import io.javalin.http.Context;
 import service.CreateGameService;
 import service.ServiceException;
-import service.request.CreateGameRequest;
-import service.results.CreateGameResult;
+import request.CreateGameRequest;
+import results.CreateGameResult;
 
 public class CreateGameHandler {
 

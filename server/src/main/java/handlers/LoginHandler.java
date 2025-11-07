@@ -6,8 +6,8 @@ import dataaccess.UserDAO;
 import io.javalin.http.Context;
 import service.LoginService;
 import service.ServiceException;
-import service.request.LoginRequest;
-import service.results.LoginResult;
+import request.LoginRequest;
+import results.LoginResult;
 
 public class LoginHandler {
 
