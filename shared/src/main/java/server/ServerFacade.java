@@ -1,6 +1,7 @@
 package server;
 import com.google.gson.Gson;
 import exception.ResponseException;
+import results.RegisterResult;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -17,8 +18,10 @@ public class ServerFacade {
         serverURL = url;
     }
 
-    public void register(String username, String password, String email) {
-        throw new RuntimeException("not implemented!!");
+    public RegisterResult register(String username, String password, String email) throws ResponseException{
+        var request = buildRequest("POST", "/user", null);
+        var response = sendRequest(request);
+        return handleResponse(response, null);
     }
 
     public void login(String username, String password) {
@@ -44,12 +47,12 @@ public class ServerFacade {
 
 
     private HttpRequest buildRequest(String method, String path, Object body) {
-        var request = HttpRequest.newBuilder().uri(URI.create(serverURL + path)).method(method, makeRequestBody(body));
+        var request = HttpRequest.newBuilder().uri(URI.create(serverURL + path));
 
         if (body != null) {
             request.header("Content-Type", "application/json");
         }
-        return request.build();
+        return request.method(method, makeRequestBody(body)).build();
 
 
 
