@@ -20,9 +20,13 @@ public class ServerFacadeTests {
     public static void init() {
         server = new Server();
         var port = server.run(0);
-        var url = "http://localhost/" + port;
+        var url = "http://localhost:" + port;
         facade = new ServerFacade(url);
         System.out.println("Started test HTTP server on " + port);
+    }
+    @BeforeEach
+    void clear() throws ResponseException {
+        facade.clear();
     }
 
     @AfterAll
@@ -48,4 +52,20 @@ public class ServerFacadeTests {
 
     }
 
+    @Test
+    public void loginPositive() throws Exception {
+        facade.register("mortadelo", "pass", "test@email.com");
+        var loggedIn = facade.login("mortadelo", "pass");
+        assertEquals("mortadelo", loggedIn.username());
+
+
+    }
+
+    @Test
+    public void loginNegative() throws Exception {
+        facade.register("filemon", "pass", "test@email.com");
+        assertThrows(ResponseException.class, () -> facade.login("filemon", "wrong"));
+
+
+    }
 }

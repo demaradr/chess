@@ -1,6 +1,9 @@
 package server;
 import com.google.gson.Gson;
 import exception.ResponseException;
+import request.LoginRequest;
+import request.RegisterRequest;
+import results.LoginResult;
 import results.RegisterResult;
 
 import java.net.URI;
@@ -19,13 +22,18 @@ public class ServerFacade {
     }
 
     public RegisterResult register(String username, String password, String email) throws ResponseException{
-        var request = buildRequest("POST", "/user", null);
+        var requestBody = new RegisterRequest(username,password,email);
+        var request = buildRequest("POST", "/user", requestBody);
         var response = sendRequest(request);
-        return handleResponse(response, null);
+        return handleResponse(response, RegisterResult.class);
     }
 
-    public void login(String username, String password) {
-        throw new RuntimeException("not implemented!!");
+    public LoginResult login(String username, String password) throws ResponseException {
+        var requestBody = new LoginRequest(username,password);
+        var request = buildRequest("POST", "/session", requestBody);
+        var response = sendRequest(request);
+
+        return handleResponse(response, LoginResult.class);
     }
 
     public void joinGame(Integer gameID, String color) {
@@ -43,6 +51,13 @@ public class ServerFacade {
 
     public void listGames() {
         throw new RuntimeException("not implemented!!");
+    }
+
+
+    public void clear() throws ResponseException {
+        var request = buildRequest("DELETE", "/db", null);
+        var response = sendRequest(request);
+        handleResponse(response, null);
     }
 
 
