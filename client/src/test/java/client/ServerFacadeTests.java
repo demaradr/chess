@@ -7,8 +7,7 @@ import results.RegisterResult;
 import server.Server;
 import server.ServerFacade;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 public class ServerFacadeTests {
@@ -66,6 +65,23 @@ public class ServerFacadeTests {
         facade.register("filemon", "pass", "test@email.com");
         assertThrows(ResponseException.class, () -> facade.login("filemon", "wrong"));
 
+
+    }
+
+
+    @Test
+    public void logoutPositive() throws Exception {
+        facade.register("mortadelo", "pass", "test@email.com");
+        var loggedIn = facade.login("mortadelo", "pass");
+        assertDoesNotThrow(() -> facade.logout());
+
+
+    }
+
+    @Test
+    public void logoutNegative() throws Exception {
+
+        assertThrows(ResponseException.class, () -> facade.logout());
 
     }
 }

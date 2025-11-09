@@ -15,6 +15,7 @@ public class ServerFacade {
 
     private final HttpClient client = HttpClient.newHttpClient();
     private final String serverURL;
+    private String authToken;
 
 
     public ServerFacade(String url) {
@@ -41,8 +42,16 @@ public class ServerFacade {
     }
 
 
-    public void logout() {
-        throw new RuntimeException("not implemented!!");
+    public void logout() throws ResponseException{
+        if (authToken == null) {
+
+            throw new RuntimeException();
+
+        }
+        var request = buildRequest("DELETE", "/session", null);
+        var response = sendRequest(request);
+        handleResponse(response, null);
+
     }
 
     public void createGame(String gameName) {
