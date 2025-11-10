@@ -118,4 +118,22 @@ public class ServerFacadeTests {
     void listGamesNegative() {
         assertThrows(ResponseException.class, () -> facade.listGames());
     }
+
+
+    @Test
+    void joinGamePositive() throws Exception {
+        facade.register("user","pass","email");
+        var game = facade.createGame("game");
+        int gameID = game.gameID();
+        assertDoesNotThrow(() -> facade.joinGame(gameID, "WHITE"));
+    }
+
+
+    @Test
+    void joinGameNegative() throws Exception {
+        facade.register("user","pass","email");
+        assertThrows(ResponseException.class, () -> facade.joinGame(21, "WHITE"));
+
+    }
+
 }

@@ -2,8 +2,10 @@ package server;
 import com.google.gson.Gson;
 import exception.ResponseException;
 import request.CreateGameRequest;
+import request.JoinGameRequest;
 import request.LoginRequest;
 import request.RegisterRequest;
+import results.CreateGameResult;
 import results.ListGamesResult;
 import results.LoginResult;
 import results.RegisterResult;
@@ -43,8 +45,15 @@ public class ServerFacade {
         return result;
     }
 
-    public void joinGame(Integer gameID, String color) {
-        throw new RuntimeException("not implemented!!");
+    public void joinGame(Integer gameID, String color) throws ResponseException {
+        if (authToken == null) {
+            throw new ResponseException(ResponseException.Code.ClientError, "User not logged in!");
+
+        }
+
+        var request = buildRequest("PUT", "/game", new JoinGameRequest(color, gameID));
+        var response = sendRequest(request);
+        handleResponse(response, JoinGameRequest.class);
     }
 
 
@@ -61,14 +70,14 @@ public class ServerFacade {
 
     }
 
-    public CreateGameRequest createGame(String gameName) throws ResponseException {
+    public CreateGameResult createGame(String gameName) throws ResponseException {
         if (authToken == null) {
             throw new ResponseException(ResponseException.Code.ClientError, "User not logged in!");
 
         }
         var request = buildRequest("POST", "/game", null);
         var response = sendRequest(request);
-        return handleResponse(response, CreateGameRequest.class);
+        return handleResponse(response, CreateGameResult.class);
 
     }
 
