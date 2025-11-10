@@ -79,9 +79,43 @@ public class ServerFacadeTests {
     }
 
     @Test
-    public void logoutNegative() throws Exception {
-
+    public void logoutNegative() {
         assertThrows(ResponseException.class, () -> facade.logout());
 
+    }
+
+
+    @Test
+    void createGamePositive() throws Exception {
+        facade.register("test", "pass","email");
+        var game = facade.createGame("Test");
+        assertNotNull(game);
+    }
+
+
+    @Test
+    void createGameNegative() {
+        assertThrows(ResponseException.class, () -> facade.createGame("Test"));
+    }
+
+
+
+    @Test
+    void listGamesPositive() throws ResponseException {
+
+        facade.register("test","pass","mail");
+        facade.createGame("Test");
+        facade.createGame("Test2");
+        facade.createGame("Test3");
+        facade.createGame("Test4");
+
+        var listGames = facade.listGames();
+        assertEquals(4, listGames.games().size());
+    }
+
+
+    @Test
+    void listGamesNegative() {
+        assertThrows(ResponseException.class, () -> facade.listGames());
     }
 }
