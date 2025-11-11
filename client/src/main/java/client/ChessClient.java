@@ -1,11 +1,16 @@
 package client;
 
 import exception.ResponseException;
+import models.GameData;
+import results.CreateGameResult;
+import results.ListGamesResult;
 import results.LoginResult;
 import results.RegisterResult;
 import server.ServerFacade;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Scanner;
 
 import static ui.EscapeSequences.*;
@@ -16,6 +21,7 @@ public class ChessClient {
     private final ServerFacade server;
     private String authToken;
     private String username;
+    private List<GameData> createdGames = new ArrayList<>();
 
 
     public ChessClient(String serverURL) {
@@ -84,6 +90,8 @@ public class ChessClient {
                 case "register" -> register(params);
                 case "login" -> login(params);
                 case "logout" -> logout();
+                case "create" -> createGame(params);
+                case "list" -> listGames();
                 case "quit" -> "quit";
                 default -> throw new IllegalStateException("Unexpected input: " + command +"\n");
             };
@@ -116,7 +124,7 @@ public class ChessClient {
 
         }
 
-        if (params.length < 1) {
+        if (params.length < 2) {
             return SET_TEXT_COLOR_RED + "Wrong input! Type: login <USERNAME> <PASSWORD>\n"+ RESET_TEXT_COLOR;
 
         }
@@ -125,7 +133,7 @@ public class ChessClient {
         this.authToken = result.authToken();
         this.username = result.username();
         this.state = State.LOGGED_IN;
-        return SET_TEXT_COLOR_GREEN + "Loggined in as " + username + "!\n" + RESET_TEXT_COLOR;
+        return SET_TEXT_COLOR_GREEN + "Logged in as " + username + "!\n" + RESET_TEXT_COLOR;
 
 
 
@@ -145,6 +153,46 @@ public class ChessClient {
 
 
         return SET_TEXT_COLOR_GREEN + "You logged out!" + RESET_TEXT_COLOR;
+    }
+
+    private String createGame(String... params) throws ResponseException {
+        if (state == State.LOGGED_OUT) {
+            return SET_TEXT_COLOR_RED + "You're not logged in!\n"+ RESET_TEXT_COLOR;
+
+        }
+        if (params.length < 1) {
+            return SET_TEXT_COLOR_RED + "Wrong input! Type: create <GAME_NAME>\n"+ RESET_TEXT_COLOR;
+
+        }
+
+        String game = Arrays.toString(params);
+        return SET_TEXT_COLOR_GREEN + "Created game " + game + "!\n" + RESET_TEXT_COLOR;
+
+
+    }
+
+    private String listGames() throws ResponseException {
+        if (state == State.LOGGED_OUT) {
+            return SET_TEXT_COLOR_RED + "You're not logged in!\n"+ RESET_TEXT_COLOR;
+        }
+        ListGamesResult allGames = server.listGames();
+        this.createdGames = allGames.games();
+
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < createdGames.size(); i++) {
+            GameData game = createdGames.get(i);
+            result.append(i + 1);
+            result.append(game.gameName());
+            result.append(" - White: ");
+            result.append(game.whiteUsername());
+            result.append(", Black: ");
+            result.append(game.blackUsername());
+            result.append("\n");
+
+        }
+        return result.toString();
+
+
     }
 
 

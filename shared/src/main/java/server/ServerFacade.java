@@ -75,7 +75,8 @@ public class ServerFacade {
             throw new ResponseException(ResponseException.Code.ClientError, "User not logged in!");
 
         }
-        var request = buildRequest("POST", "/game", null);
+        var requestBody = new CreateGameRequest(gameName);
+        var request = buildRequest("POST", "/game", requestBody);
         var response = sendRequest(request);
         return handleResponse(response, CreateGameResult.class);
 
@@ -105,6 +106,12 @@ public class ServerFacade {
         if (body != null) {
             request.header("Content-Type", "application/json");
         }
+
+        if (authToken != null) {
+            request.header("authorization", authToken);
+        }
+
+
         return request.method(method, makeRequestBody(body)).build();
 
 
@@ -140,12 +147,19 @@ public class ServerFacade {
 
         if (!isSuccessful(status)) {
             var body = response.body();
+            var errorCode = ResponseException.fromHttpStatusCode(status);
 
-            if (body != null) {
-                throw ResponseException.fromJSON(body);
+            if (body != null && !body.isEmpty()) {
+                try {
+                    var errorResponse = new Gson().fromJson(body, ErrorResponse.class);
+                    throw new ResponseException(errorCode, errorResponse.message());
+                }
+                catch (Exception exep) {
+                    throw new ResponseException(errorCode, body);
+                }
             }
 
-            throw new ResponseException(ResponseException.fromHttpStatusCode(status), "other failure: " + status);
+            throw new ResponseException(errorCode, "other failure: " + status);
         }
 
 
@@ -155,6 +169,8 @@ public class ServerFacade {
 
         return null;
     }
+
+    private record ErrorResponse(String message) {}
 
 
     private boolean isSuccessful(int status) {
