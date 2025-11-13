@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
+import static java.lang.Integer.parseInt;
 import static ui.EscapeSequences.*;
 
 public class ChessClient {
@@ -94,7 +95,8 @@ public class ChessClient {
                 case "logout" -> logout();
                 case "create" -> createGame(params);
                 case "list" -> listGames();
-                case "join" -> join();
+                case "join" -> join(params);
+                case "observe" -> observe(params);
                 case "quit" -> "quit";
                 default -> throw new IllegalStateException("Unexpected input: " + command +"\n");
             };
@@ -199,9 +201,68 @@ public class ChessClient {
     }
 
 
-    private String join() {
-        DrawChessBoard.drawBoard(ChessGame.TeamColor.BLACK);
-        return "";
+    private String join(String... params) throws ResponseException{
+        if (state == State.LOGGED_OUT) {
+            return SET_TEXT_COLOR_RED + "You're not logged in!\n"+ RESET_TEXT_COLOR;
+        }
+
+        if (params.length < 2) {
+            return SET_TEXT_COLOR_RED + "Wrong input! Type: join <NUMBER> <WHITE|BLACK>\n"+ RESET_TEXT_COLOR;
+
+        }
+
+        int gameNum = parseInt(params[0]);
+
+        if (gameNum < 1 || gameNum > createdGames.size()) {
+            return SET_TEXT_COLOR_RED + "Invalid game number! List games to see valid numbers\n"+ RESET_TEXT_COLOR;
+        }
+
+        String color = params[1].toUpperCase();
+        if (!color.equals("WHITE") && !color.equals("BLACK")) {
+            return SET_TEXT_COLOR_RED + "Color must be WHITE or BLACK\n"+ RESET_TEXT_COLOR;
+
+        }
+
+        GameData game = createdGames.get(gameNum -1);
+        server.joinGame(game.gameID(), color);
+        ChessGame.TeamColor playerColor = color.equals("WHITE") ? ChessGame.TeamColor.WHITE : ChessGame.TeamColor.BLACK;
+        DrawChessBoard.drawBoard(playerColor);
+
+        return SET_TEXT_COLOR_GREEN + "Joined " + game.gameName() + " as " + color + "!\n" + RESET_TEXT_COLOR;
+
+
+    }
+
+
+    private String observe(String... params) throws ResponseException{
+        if (state == State.LOGGED_OUT) {
+            return SET_TEXT_COLOR_RED + "You're not logged in!\n"+ RESET_TEXT_COLOR;
+        }
+
+        if (params.length < 1) {
+            return SET_TEXT_COLOR_RED + "Wrong input! Type: join <NUMBER> <WHITE|BLACK>\n"+ RESET_TEXT_COLOR;
+
+        }
+
+        int gameNum = parseInt(params[0]);
+
+        if (gameNum < 1 || gameNum > createdGames.size()) {
+            return SET_TEXT_COLOR_RED + "Invalid game number! List games to see valid numbers\n"+ RESET_TEXT_COLOR;
+        }
+
+        String color = params[1].toUpperCase();
+        if (!color.equals("WHITE") && !color.equals("BLACK")) {
+            return SET_TEXT_COLOR_RED + "Color must be WHITE or BLACK\n"+ RESET_TEXT_COLOR;
+
+        }
+
+        GameData game = createdGames.get(gameNum -1);
+        server.joinGame(game.gameID(), color);
+        DrawChessBoard.drawBoard(ChessGame.TeamColor.WHITE);
+
+        return SET_TEXT_COLOR_GREEN + "Observing " + game.gameName() +  "!\n" + RESET_TEXT_COLOR;
+
+
     }
 
 
