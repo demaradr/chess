@@ -1,5 +1,6 @@
 package client;
 
+import chess.ChessGame;
 import exception.ResponseException;
 import models.GameData;
 import results.CreateGameResult;
@@ -7,6 +8,7 @@ import results.ListGamesResult;
 import results.LoginResult;
 import results.RegisterResult;
 import server.ServerFacade;
+import ui.DrawChessBoard;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -92,6 +94,7 @@ public class ChessClient {
                 case "logout" -> logout();
                 case "create" -> createGame(params);
                 case "list" -> listGames();
+                case "join" -> join();
                 case "quit" -> "quit";
                 default -> throw new IllegalStateException("Unexpected input: " + command +"\n");
             };
@@ -193,6 +196,12 @@ public class ChessClient {
         return result.toString();
 
 
+    }
+
+
+    private String join() {
+        DrawChessBoard.drawBoard(ChessGame.TeamColor.BLACK);
+        return "";
     }
 
 
