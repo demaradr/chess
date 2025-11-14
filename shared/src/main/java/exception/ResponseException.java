@@ -21,10 +21,6 @@ public class ResponseException extends Exception {
     }
 
 
-    public static ResponseException fromJSON(String json) {
-        return new ResponseException(Code.ServerError, json);
-    }
-
 
 
     public static Code fromHttpStatusCode(int statusCode) {

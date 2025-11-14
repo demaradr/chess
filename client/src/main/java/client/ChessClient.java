@@ -302,7 +302,9 @@ public class ChessClient {
 
     private String parseErrors(String message) {
 
-        if (message == null) return "An error occured";
+        if (message == null) {
+            return "An error occurred";
+        }
 
         if (message.toLowerCase().contains("bad request")) {
             return "Invalid input. Try again\n";

@@ -37,27 +37,7 @@ public class DrawChessBoard {
             out.print(" " + rowNum + " ");
             for (int col = 0; col < 8; col++) {
                 int colNum = col + 1;
-                boolean lightSquare = ((rowNum + colNum) % 2 != 0);
-
-                if (lightSquare) {
-                    setLightSquare(out);
-                }
-                else {
-                    setDarkSquare(out);
-                }
-
-                ChessPosition pos = new ChessPosition(rowNum, colNum);
-                ChessPiece piece = board.getPiece(pos);
-
-
-                if (piece == null) {
-                    out.print(EMPTY);
-
-                }
-
-                else {
-                    printPiece(out, piece);
-                }
+                drawHelper(out, board, rowNum, colNum);
 
 
             }
@@ -74,6 +54,30 @@ public class DrawChessBoard {
 
     }
 
+    private static void drawHelper(PrintStream out, ChessBoard board, int rowNum, int colNum) {
+        boolean lightSquare = ((rowNum + colNum) % 2 != 0);
+
+        if (lightSquare) {
+            setLightSquare(out);
+        }
+        else {
+            setDarkSquare(out);
+        }
+
+        ChessPosition pos = new ChessPosition(rowNum, colNum);
+        ChessPiece piece = board.getPiece(pos);
+
+
+        if (piece == null) {
+            out.print(EMPTY);
+
+        }
+
+        else {
+            printPiece(out, piece);
+        }
+    }
+
 
     private static void drawBoardBlack(PrintStream out, ChessBoard board) {
 
@@ -85,27 +89,7 @@ public class DrawChessBoard {
             out.print(" " + rowNum + " ");
             for (int col = 0; col < 8; col++) {
                 int colNum = 8 - col;
-                boolean lightSquare = ((rowNum + colNum) % 2 != 0);
-
-                if (lightSquare) {
-                    setLightSquare(out);
-                }
-                else {
-                    setDarkSquare(out);
-                }
-
-                ChessPosition pos = new ChessPosition(rowNum, colNum);
-                ChessPiece piece = board.getPiece(pos);
-
-
-                if (piece == null) {
-                    out.print(EMPTY);
-
-                }
-
-                else {
-                    printPiece(out, piece);
-                }
+                drawHelper(out, board, rowNum, colNum);
 
                 setBorder(out);
 
