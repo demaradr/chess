@@ -32,7 +32,7 @@ public class ChessClient {
     }
 
     public void run() {
-        System.out.println("Hello there! Welcome to 240 Chess ♕ Type help to start :)");
+        System.out.println("\nHello there! Welcome to 240 Chess ♕ \nType help to start :)\n");
 
         Scanner scanner = new Scanner(System.in);
         var result = "";
@@ -40,9 +40,10 @@ public class ChessClient {
         while (!result.equals("quit")) {
             printPrompt();
 
-            String line = scanner.nextLine();
+
 
             try {
+                String line = scanner.nextLine();
                 result = eval(line);
                 System.out.print(result);
             }
@@ -61,20 +62,16 @@ public class ChessClient {
 
     public String help() {
         if (state == State.LOGGED_OUT) {
-            return """
-                    to register type: register <USERNAME> <PASSWORD> <EMAIL>
-                    to login type: login <USERNAME> <PASSWORD>
-                    to exit chess type: quit
-                    """;
+            return "to register type:"+ SET_TEXT_COLOR_BLUE + " register <USERNAME> <PASSWORD> <EMAIL>" + RESET_TEXT_COLOR + "\n" +
+                    "to login type:"+ SET_TEXT_COLOR_BLUE + " login <USERNAME> <PASSWORD>" + RESET_TEXT_COLOR + "\n" +
+                    "to exit chess type:"+ SET_TEXT_COLOR_BLUE + " quit" + RESET_TEXT_COLOR + "\n";
         }
-        return """
-                to create a game type: create <NAME>
-                to see all games type: list
-                to join a game type: join <GAMEID> [WHITE|BLACK]
-                to watch a game type: observe <GAMEID>
-                to logout type: logout
-                to exit chess type: quit
-                """;
+        return  "to create a game type:"+ SET_TEXT_COLOR_BLUE + " create <NAME>" + RESET_TEXT_COLOR + "\n" +
+                "to see all games type:" + SET_TEXT_COLOR_BLUE + " list" + RESET_TEXT_COLOR + "\n" +
+                "to join a game type:" + SET_TEXT_COLOR_BLUE + " join <GAMEID> [WHITE|BLACK]" + RESET_TEXT_COLOR + "\n" +
+                "to watch a game type:"+ SET_TEXT_COLOR_BLUE + " observe <GAMEID>" + RESET_TEXT_COLOR + "\n" +
+                "to logout type:"+ SET_TEXT_COLOR_BLUE + " logout" + RESET_TEXT_COLOR + "\n" +
+                "to exit chess type:"+ SET_TEXT_COLOR_BLUE + " quit" + RESET_TEXT_COLOR + "\n";
     }
 
 
@@ -101,8 +98,8 @@ public class ChessClient {
                 default -> throw new IllegalStateException("Unexpected input: " + command +"\n");
             };
 
-        } catch (Exception exep) {
-            return exep.getMessage();
+        } catch (ResponseException exep) {
+            return printError(exep);
         }
     }
 
@@ -113,7 +110,11 @@ public class ChessClient {
 
         }
         if (params.length < 3) {
-            return SET_TEXT_COLOR_RED + "Wrong input! Type: register <USERNAME> <PASSWORD> <EMAIL> \n" + RESET_TEXT_COLOR;
+            return SET_TEXT_COLOR_RED + "Not enough arguments! Type: register <USERNAME> <PASSWORD> <EMAIL> \n" + RESET_TEXT_COLOR;
+        }
+
+        if (params.length > 3) {
+            return SET_TEXT_COLOR_RED + "Too many arguments! Type: register <USERNAME> <PASSWORD> <EMAIL> \n" + RESET_TEXT_COLOR;
         }
         RegisterResult result = server.register(params[0], params[1], params[2]);
         this.authToken = result.authToken();
@@ -130,9 +131,15 @@ public class ChessClient {
         }
 
         if (params.length < 2) {
-            return SET_TEXT_COLOR_RED + "Wrong input! Type: login <USERNAME> <PASSWORD>\n"+ RESET_TEXT_COLOR;
+            return SET_TEXT_COLOR_RED + "Not enough arguments! Type: login <USERNAME> <PASSWORD>\n"+ RESET_TEXT_COLOR;
 
         }
+        if (params.length > 2) {
+            return SET_TEXT_COLOR_RED + "Too many arguments! Type: login <USERNAME> <PASSWORD>\n"+ RESET_TEXT_COLOR;
+
+        }
+
+
 
         LoginResult result = server.login(params[0], params[1]);
         this.authToken = result.authToken();
@@ -157,7 +164,7 @@ public class ChessClient {
         this.state = State.LOGGED_OUT;
 
 
-        return SET_TEXT_COLOR_GREEN + "You logged out!" + RESET_TEXT_COLOR;
+        return SET_TEXT_COLOR_GREEN + "You logged out! \n" + RESET_TEXT_COLOR;
     }
 
     private String createGame(String... params) throws ResponseException {
@@ -166,11 +173,16 @@ public class ChessClient {
 
         }
         if (params.length < 1) {
-            return SET_TEXT_COLOR_RED + "Wrong input! Type: create <GAME_NAME>\n"+ RESET_TEXT_COLOR;
+            return SET_TEXT_COLOR_RED + "Not enough arguments! Type: create <GAME_NAME>\n"+ RESET_TEXT_COLOR;
+
+        }
+        if (params.length > 1) {
+            return SET_TEXT_COLOR_RED + "Too many arguments! Type: create <GAME_NAME>\n"+ RESET_TEXT_COLOR;
 
         }
 
-        String game = Arrays.toString(params);
+        String game = String.join(" ", params);
+        server.createGame(game);
         return SET_TEXT_COLOR_GREEN + "Created game " + game + "!\n" + RESET_TEXT_COLOR;
 
 
@@ -187,6 +199,7 @@ public class ChessClient {
         for (int i = 0; i < createdGames.size(); i++) {
             GameData game = createdGames.get(i);
             result.append(i + 1);
+            result.append(" ");
             result.append(game.gameName());
             result.append(" - White: ");
             result.append(game.whiteUsername());
@@ -207,11 +220,22 @@ public class ChessClient {
         }
 
         if (params.length < 2) {
-            return SET_TEXT_COLOR_RED + "Wrong input! Type: join <NUMBER> <WHITE|BLACK>\n"+ RESET_TEXT_COLOR;
-
+            return SET_TEXT_COLOR_RED + "Not enough arguments! Type: join <NUMBER> <WHITE|BLACK>\n"+ RESET_TEXT_COLOR;
+        }
+        if (params.length > 2) {
+            return SET_TEXT_COLOR_RED + "Too many arguments! Type: join <NUMBER> <WHITE|BLACK>\n"+ RESET_TEXT_COLOR;
         }
 
-        int gameNum = parseInt(params[0]);
+        int gameNum;
+
+        try {
+            gameNum = parseInt(params[0]);
+
+        }
+        catch (NumberFormatException ex) {
+            return SET_TEXT_COLOR_RED + "Please enter a number\n"+ RESET_TEXT_COLOR;
+
+        }
 
         if (gameNum < 1 || gameNum > createdGames.size()) {
             return SET_TEXT_COLOR_RED + "Invalid game number! List games to see valid numbers\n"+ RESET_TEXT_COLOR;
@@ -240,29 +264,68 @@ public class ChessClient {
         }
 
         if (params.length < 1) {
-            return SET_TEXT_COLOR_RED + "Wrong input! Type: join <NUMBER> <WHITE|BLACK>\n"+ RESET_TEXT_COLOR;
+            return SET_TEXT_COLOR_RED + "Not enough arguments! Type: observe <NUMBER>\n"+ RESET_TEXT_COLOR;
 
         }
 
-        int gameNum = parseInt(params[0]);
+        if (params.length > 1) {
+            return SET_TEXT_COLOR_RED + "Too many arguments! Type: observe <NUMBER>\n"+ RESET_TEXT_COLOR;
+
+        }
+
+        int gameNum;
+
+        try {
+            gameNum = parseInt(params[0]);
+
+        }
+        catch (NumberFormatException ex) {
+            return SET_TEXT_COLOR_RED + "Please enter a valid number\n"+ RESET_TEXT_COLOR;
+
+        }
 
         if (gameNum < 1 || gameNum > createdGames.size()) {
             return SET_TEXT_COLOR_RED + "Invalid game number! List games to see valid numbers\n"+ RESET_TEXT_COLOR;
         }
 
-        String color = params[1].toUpperCase();
-        if (!color.equals("WHITE") && !color.equals("BLACK")) {
-            return SET_TEXT_COLOR_RED + "Color must be WHITE or BLACK\n"+ RESET_TEXT_COLOR;
 
-        }
 
         GameData game = createdGames.get(gameNum -1);
-        server.joinGame(game.gameID(), color);
         DrawChessBoard.drawBoard(ChessGame.TeamColor.WHITE);
 
         return SET_TEXT_COLOR_GREEN + "Observing " + game.gameName() +  "!\n" + RESET_TEXT_COLOR;
 
 
+    }
+
+
+
+    private String parseErrors(String message) {
+
+        if (message == null) return "An error occured";
+
+        if (message.toLowerCase().contains("bad request")) {
+            return "Invalid input. Try again\n";
+        }
+
+        if (message.toLowerCase().contains("unauthorized")) {
+            return "Not authorized. Try logging in again\n";
+        }
+
+        if (message.toLowerCase().contains("already exists")) {
+            return "That username already exits. Choose a different one\n";
+        }
+
+        return message;
+    }
+
+    private String printError(ResponseException exce) {
+        String message = exce.getMessage();
+        if(message == null) {
+            message = "Request failed. Try again\n";
+        }
+        message = parseErrors(message);
+        return SET_TEXT_COLOR_RED + message + RESET_TEXT_COLOR;
     }
 
 
