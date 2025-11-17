@@ -318,6 +318,10 @@ public class ChessClient {
             return "That username already exits. Choose a different one\n";
         }
 
+        if (message.toLowerCase().contains("already taken")) {
+            return "Color already taken! Try again with a different color or game\n";
+        }
+
         return message;
     }
 
