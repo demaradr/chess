@@ -8,7 +8,7 @@ import javax.management.Notification;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class ConnectioManager {
+public class ConnectionManager {
 
     public final ConcurrentHashMap<String, Connection> connections = new ConcurrentHashMap<>();
 

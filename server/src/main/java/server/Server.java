@@ -3,6 +3,7 @@ package server;
 import dataaccess.*;
 import handlers.*;
 import io.javalin.*;
+import websocket.WebSocketHandler;
 
 public class Server {
 
@@ -17,6 +18,7 @@ public class Server {
     private final ListGamesHandler listGamesHandler;
     private final CreateGameHandler createGameHandler;
     private final JoinGameHandler joinGameHandler;
+    private final WebSocketHandler webSocketHandler;
 
     public Server() {
         javalin = Javalin.create(config -> config.staticFiles.add("web"));
@@ -36,16 +38,17 @@ public class Server {
         listGamesHandler = new ListGamesHandler(gameDAO, authDAO);
         createGameHandler = new CreateGameHandler(gameDAO, authDAO);
         joinGameHandler = new JoinGameHandler(gameDAO, authDAO);
+        webSocketHandler = new WebSocketHandler();
 
 
 
         // Register your endpoints and exception handlers here.
 
-        registerEnpoints();
+        registerEndpoints();
 
     }
 
-    private void registerEnpoints() {
+    private void registerEndpoints() {
         javalin.delete("/db", clearHandler::clear);
         javalin.post("/user", registerHandler::register);
         javalin.post("/session", loginHandler::login);
@@ -53,6 +56,11 @@ public class Server {
         javalin.get("/game", listGamesHandler::list);
         javalin.post("/game", createGameHandler::createGame);
         javalin.put("/game", joinGameHandler::joinGame);
+        javalin.ws("/ws", ws -> {
+            ws.onConnect(webSocketHandler);
+            ws.onMessage(webSocketHandler);
+            ws.onClose(webSocketHandler);
+        });
     }
 
     public int run(int desiredPort) {
