@@ -6,6 +6,7 @@ import org.eclipse.jetty.websocket.api.Session;
 
 import javax.management.Notification;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ConnectionManager {
@@ -14,24 +15,22 @@ public class ConnectionManager {
 
 
     public void add(Connection connection) {
-        connections.put(connection.sessionID(), connection);
+        connections.put(String.valueOf(connection.session()), connection);
     }
 
-    public void remove(String sessionID) {
-        connections.remove(sessionID);
+    public void remove(String session) {
+        connections.remove(session);
     }
 
-    public void broadcast(Session excludeSession, Notification notification ) throws IOException {
-        String message = notification.toString();
-        for (Session c : connections.values()) {
-            if (c.isOpen()) {
-                if (!c.equals(excludeSession)) {
-                    c.getRemote().sendString(message);
-                }
-            }
-        }
+    Collection<Connection> allConnections() {
+        return connections.values();
     }
 
-    public record Connection(String sessionID, WsContext context, int gameID, String user, ChessGame.TeamColor color) {
+
+    public record Connection(Session session,
+                             int gameID,
+                             String user,
+                             ChessGame.TeamColor color,
+                             boolean observer) {
     }
 }

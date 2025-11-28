@@ -38,7 +38,7 @@ public class Server {
         listGamesHandler = new ListGamesHandler(gameDAO, authDAO);
         createGameHandler = new CreateGameHandler(gameDAO, authDAO);
         joinGameHandler = new JoinGameHandler(gameDAO, authDAO);
-        webSocketHandler = new WebSocketHandler();
+        webSocketHandler = new WebSocketHandler(authDAO, gameDAO);
 
 
 
