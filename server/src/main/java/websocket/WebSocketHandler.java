@@ -1,12 +1,15 @@
 package websocket;
 
 import chess.ChessGame;
+import chess.ChessMove;
+import chess.InvalidMoveException;
 import com.google.gson.Gson;
 import dataaccess.AuthDAO;
 import dataaccess.GameDAO;
 import io.javalin.websocket.*;
 import models.AuthData;
 import models.GameData;
+import websocket.commands.MakeMoveCommand;
 import websocket.commands.UserGameCommand;
 import org.eclipse.jetty.websocket.api.Session;
 import websocket.messages.ErrorMessage;
@@ -35,7 +38,7 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
     }
 
     @Override
-    public void handleMessage(WsMessageContext context) {
+    public void handleMessage(WsMessageContext context) throws IOException {
         Session session = context.session;
         UserGameCommand command = gson.fromJson(context.message(), UserGameCommand.class);
         switch (command.getCommandType()) {
@@ -49,7 +52,7 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
     }
 
 
-    private void connectUser(Session session, UserGameCommand command) {
+    private void connectUser(Session session, UserGameCommand command) throws IOException {
         try {
             if (command.getAuthToken() == null) {
                 sendError(session, "Error: unauthorized");
@@ -97,8 +100,60 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
 
     }
 
+    private void makeMove(Session session, String json) throws IOException {
+        try {
+            MakeMoveCommand move = gson.fromJson(json, MakeMoveCommand.class);
+            AuthData auth = authDAO.getAuth(move.getAuthToken());
+            GameData game = gameDAO.getGame(move.getGameID());
 
-    private void sendError(Session session, String error) {
+
+            if (move == null || move.getGameID() == null) {
+                sendError(session, "Error: not a valid move");
+                return;
+            }
+
+            ChessGame.TeamColor color = null;
+            if (auth.username().equals(game.whiteUsername())) {
+                color = ChessGame.TeamColor.WHITE;
+
+            }
+            else if (auth.username().equals(game.blackUsername())) {
+                color = ChessGame.TeamColor.BLACK;
+            }
+
+            if (color == null) {
+                sendError(session, "Error: observers can't move");
+                return;
+            }
+
+            ChessMove chessMove = move.getMove();
+            if (chessMove == null) {
+                sendError(session, "Error: bad move");
+                return;
+            }
+
+            ChessGame chessGame = game.game();
+            try {
+                chessGame.makeMove(chessMove);
+            }
+            catch (InvalidMoveException ex){
+                sendError(session, "Error: invalid move");
+                return;
+            }
+
+
+            GameData update = new GameData(game.gameID(), game.whiteUsername(),
+                    game.blackUsername(), game.gameName(), chessGame);
+            gameDAO.updateGame(update);
+
+        }
+        catch (Exception ex) {
+            sendError(session, ex.getMessage());
+        }
+    }
+
+
+    private void sendError(Session session, String error) throws IOException {
         session.getRemote().sendString(gson.toJson(new ErrorMessage(error)));
     }
 }
