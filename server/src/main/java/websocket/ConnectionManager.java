@@ -18,7 +18,7 @@ public class ConnectionManager {
         connections.put(String.valueOf(connection.session()), connection);
     }
 
-    public void remove(String session) {
+    public void remove(Session session) {
         connections.remove(session);
     }
 

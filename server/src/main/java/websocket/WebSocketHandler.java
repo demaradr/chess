@@ -152,6 +152,47 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
         }
     }
 
+    private void leave(Session session, UserGameCommand command) throws IOException {
+        try {
+            if (command.getAuthToken() == null) {
+                sendError(session, "Error: unauthorized");
+                return;
+            }
+
+            if (command.getGameID() == null) {
+                sendError(session, "Error");
+                return;
+            }
+
+            AuthData auth = authDAO.getAuth(command.getAuthToken());
+            GameData game = gameDAO.getGame(command.getGameID());
+
+
+            ChessGame.TeamColor color = null;
+            if (auth.username().equals(game.whiteUsername())) {
+                color = ChessGame.TeamColor.WHITE;
+            }
+            else if (auth.username().equals(game.blackUsername())) {
+                color = ChessGame.TeamColor.BLACK;
+            }
+
+            if (color != null) {
+                String white = color == ChessGame.TeamColor.WHITE ? null : game.whiteUsername();
+                String black = color == ChessGame.TeamColor.BLACK ? null: game.blackUsername();
+
+                GameData update = new GameData(game.gameID(), white, black, game.gameName(), game.game());
+                gameDAO.updateGame(update);
+            }
+
+            connections.remove(session);
+
+
+        }
+        catch (Exception ex) {
+            sendError(session, ex.getMessage());
+        }
+    }
+
 
     private void sendError(Session session, String error) throws IOException {
         session.getRemote().sendString(gson.toJson(new ErrorMessage(error)));
