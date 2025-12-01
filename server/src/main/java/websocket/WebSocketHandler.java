@@ -193,6 +193,43 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
         }
     }
 
+    private void resign(Session session, UserGameCommand command) throws IOException {
+        try {
+            AuthData auth = authDAO.getAuth(command.getAuthToken());
+            GameData game = gameDAO.getGame(command.getGameID());
+
+            if (auth == null) {
+                sendError(session, "Error");
+                return;
+            }
+
+            if (game == null) {
+                sendError(session, "Error");
+                return;
+            }
+
+            ChessGame.TeamColor color = null;
+
+            if (auth.username().equals(game.whiteUsername())) {
+                color = ChessGame.TeamColor.WHITE;
+            }
+            else if (auth.username().equals(game.blackUsername())) {
+                color = ChessGame.TeamColor.BLACK;
+            }
+
+            if (color == null) {
+                sendError(session, "Error: observers can't resign");
+                return;
+            }
+
+            gameDAO.updateGame(game);
+
+        }
+        catch (Exception ex) {
+            sendError(session, ex.getMessage());
+        }
+    }
+
 
     private void sendError(Session session, String error) throws IOException {
         session.getRemote().sendString(gson.toJson(new ErrorMessage(error)));
