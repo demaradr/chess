@@ -1,6 +1,9 @@
 package client;
 
 import chess.ChessGame;
+import client.websocket.NotificationHandler;
+import client.websocket.WebSocketFacade;
+import com.google.gson.Gson;
 import exception.ResponseException;
 import models.GameData;
 import results.CreateGameResult;
@@ -9,6 +12,11 @@ import results.LoginResult;
 import results.RegisterResult;
 import server.ServerFacade;
 import ui.DrawChessBoard;
+import websocket.commands.UserGameCommand;
+import websocket.messages.ErrorMessage;
+import websocket.messages.LoadGameMessage;
+import websocket.messages.NotificationMessage;
+import websocket.messages.ServerMessage;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,6 +30,7 @@ public class ChessClient {
 
     private State state = State.LOGGED_OUT;
     private final ServerFacade server;
+    private final String serverURL;
     private String authToken;
     private String username;
     private List<GameData> createdGames = new ArrayList<>();
@@ -29,6 +38,7 @@ public class ChessClient {
 
     public ChessClient(String serverURL) {
         this.server = new ServerFacade(serverURL);
+        this.serverURL = serverURL;
     }
 
     public void run() {
@@ -249,13 +259,17 @@ public class ChessClient {
 
         GameData game = createdGames.get(gameNum -1);
         server.joinGame(game.gameID(), color);
-        ChessGame.TeamColor playerColor = color.equals("WHITE") ? ChessGame.TeamColor.WHITE : ChessGame.TeamColor.BLACK;
-        DrawChessBoard.drawBoard(playerColor);
+        ChessGame.TeamColor userColor = color.equals("WHITE") ? ChessGame.TeamColor.WHITE : ChessGame.TeamColor.BLACK;
+        NotificationHandler handler = new NotificationHandler;
+        WebSocketFacade ws = new WebSocketFacade(serverURL, handler);
+        UserGameCommand connect = new UserGameCommand(UserGameCommand.CommandType.CONNECT, authToken, game.gameID());
+        ws.send(connect);
 
         return SET_TEXT_COLOR_GREEN + "Joined " + game.gameName() + " as " + color + "!\n" + RESET_TEXT_COLOR;
 
 
     }
+
 
 
     private String observe(String... params) throws ResponseException{
@@ -296,7 +310,12 @@ public class ChessClient {
         return SET_TEXT_COLOR_GREEN + "Observing " + game.gameName() +  "!\n" + RESET_TEXT_COLOR;
 
 
+        NotificationHandler handler = new NotificationHandler;
+        WebSocketFacade ws = new WebSocketFacade(serverURL, handler);
+        UserGameCommand connect = new UserGameCommand(UserGameCommand.CommandType.CONNECT, authToken, game.gameID());
+        ws.send(connect);
     }
+
 
 
 
@@ -333,7 +352,6 @@ public class ChessClient {
         message = parseErrors(message);
         return SET_TEXT_COLOR_RED + message + RESET_TEXT_COLOR;
     }
-
 
 
 

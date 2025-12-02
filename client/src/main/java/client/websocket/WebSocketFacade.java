@@ -4,6 +4,9 @@ import com.google.gson.Gson;
 import exception.ResponseException;
 import jakarta.websocket.*;
 import websocket.commands.UserGameCommand;
+import websocket.messages.ErrorMessage;
+import websocket.messages.LoadGameMessage;
+import websocket.messages.NotificationMessage;
 import websocket.messages.ServerMessage;
 
 
@@ -29,8 +32,16 @@ public class WebSocketFacade extends Endpoint {
             this.session.addMessageHandler(new MessageHandler.Whole<String>() {
                 @Override
                 public void onMessage(String message) {
-                    ServerMessage serverMessage = new Gson().fromJson(message, ServerMessage.class);
-                    notiHandler.notify(serverMessage);
+                    ServerMessage serverMessage = null;
+                    ServerMessage base = gson.fromJson(message, ServerMessage.class);
+                    switch (base.getServerMessageType()) {
+                        case LOAD_GAME -> serverMessage = gson.fromJson(message, LoadGameMessage.class);
+                        case NOTIFICATION -> serverMessage = gson.fromJson(message, NotificationMessage.class);
+                        case ERROR -> serverMessage = gson.fromJson(message, ErrorMessage.class);
+                    }
+                    if (serverMessage != null) {
+                        notiHandler.notify(serverMessage);
+                    }
                 }
 
             });
