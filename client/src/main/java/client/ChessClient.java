@@ -26,7 +26,7 @@ import java.util.Scanner;
 import static java.lang.Integer.parseInt;
 import static ui.EscapeSequences.*;
 
-public class ChessClient {
+public class ChessClient implements NotificationHandler {
 
     private State state = State.LOGGED_OUT;
     private final ServerFacade server;
@@ -34,6 +34,12 @@ public class ChessClient {
     private String authToken;
     private String username;
     private List<GameData> createdGames = new ArrayList<>();
+    private WebSocketFacade ws;
+    private final Gson gson = new Gson();
+    private ChessGame currentGame;
+    private ChessGame.TeamColor playerColor;
+    private Integer currentGameID;
+
 
 
     public ChessClient(String serverURL) {
@@ -64,10 +70,36 @@ public class ChessClient {
         }
     }
 
+    @Override
+    public void notify(ServerMessage message) {
+        switch(message.getServerMessageType()) {
+            case LOAD_GAME -> {
+                LoadGameMessage load = (LoadGameMessage) message;
+                String json = gson.toJson(load.getGame());
+                ChessGame game = gson.fromJson(json, ChessGame.class);
+
+                updateGame(game);
+            }
+
+            case NOTIFICATION -> {
+                NotificationMessage noti = (NotificationMessage) message;
+                System.out.println(noti.getNotification());
+            }
+
+            case ERROR -> {
+                ErrorMessage error = (ErrorMessage) message;
+                System.out.println(error.getError());
+            }
+        }
+    }
+
+
+
 
     enum State {
         LOGGED_OUT,
-        LOGGED_IN
+        LOGGED_IN,
+        IN_GAME
     }
 
     public String help() {
@@ -104,6 +136,8 @@ public class ChessClient {
                 case "list" -> listGames();
                 case "join" -> join(params);
                 case "observe" -> observe(params);
+                case "redraw" -> redraw();
+                case "leave" -> leave();
                 case "quit" -> "quit";
                 default -> throw new IllegalStateException("Unexpected input: " + command +"\n");
             };
@@ -260,10 +294,12 @@ public class ChessClient {
         GameData game = createdGames.get(gameNum -1);
         server.joinGame(game.gameID(), color);
         ChessGame.TeamColor userColor = color.equals("WHITE") ? ChessGame.TeamColor.WHITE : ChessGame.TeamColor.BLACK;
-        NotificationHandler handler = new NotificationHandler;
-        WebSocketFacade ws = new WebSocketFacade(serverURL, handler);
+        ws = new WebSocketFacade(serverURL, this);
         UserGameCommand connect = new UserGameCommand(UserGameCommand.CommandType.CONNECT, authToken, game.gameID());
         ws.send(connect);
+
+
+        this.currentGameID = game.gameID();
 
         return SET_TEXT_COLOR_GREEN + "Joined " + game.gameName() + " as " + color + "!\n" + RESET_TEXT_COLOR;
 
@@ -310,10 +346,51 @@ public class ChessClient {
         return SET_TEXT_COLOR_GREEN + "Observing " + game.gameName() +  "!\n" + RESET_TEXT_COLOR;
 
 
-        NotificationHandler handler = new NotificationHandler;
-        WebSocketFacade ws = new WebSocketFacade(serverURL, handler);
-        UserGameCommand connect = new UserGameCommand(UserGameCommand.CommandType.CONNECT, authToken, game.gameID());
-        ws.send(connect);
+//        NotificationHandler handler = new NotificationHandler;
+//        WebSocketFacade ws = new WebSocketFacade(serverURL, handler);
+//        UserGameCommand connect = new UserGameCommand(UserGameCommand.CommandType.CONNECT, authToken, game.gameID());
+//        ws.send(connect);
+    }
+
+
+    private void updateGame(ChessGame game) {
+        this.currentGame = game;
+        redraw();
+    }
+
+
+
+    private String redraw() {
+        if (state != State.IN_GAME) {
+            return SET_TEXT_COLOR_RED + "You're not in a game!\n" + RESET_TEXT_COLOR;
+
+        }
+        ChessGame.TeamColor viewColor = (playerColor != null) ? playerColor : ChessGame.TeamColor.WHITE;
+        DrawChessBoard.drawBoard(viewColor);
+        return "";
+    }
+
+    private String leave() {
+        if (state != State.IN_GAME) {
+            return SET_TEXT_COLOR_RED + "You're not in a game! \n" + RESET_TEXT_COLOR;
+        }
+
+        try {
+            UserGameCommand leave = new UserGameCommand(UserGameCommand.CommandType.LEAVE, authToken, currentGameID);
+            ws.send(leave);
+            ws.close();
+            state = State.LOGGED_IN;
+            ws = null;
+            currentGame = null;
+            playerColor = null;
+            return SET_TEXT_COLOR_GREEN + "You left the game!\n" + RESET_TEXT_COLOR;
+
+
+        }
+
+        catch (Exception ex) {
+            return SET_TEXT_COLOR_RED + "Error leaving the game: " + ex.getMessage() + "\n" + RESET_TEXT_COLOR;
+        }
     }
 
 
