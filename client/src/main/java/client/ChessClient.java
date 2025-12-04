@@ -108,6 +108,13 @@ public class ChessClient implements NotificationHandler {
                     "to login type:"+ SET_TEXT_COLOR_BLUE + " login <USERNAME> <PASSWORD>" + RESET_TEXT_COLOR + "\n" +
                     "to exit chess type:"+ SET_TEXT_COLOR_BLUE + " quit" + RESET_TEXT_COLOR + "\n";
         }
+        else if (state == State.IN_GAME){
+            return "to redraw board:"+ SET_TEXT_COLOR_BLUE + " redraw" + RESET_TEXT_COLOR + "\n" +
+                    "to leave the game:" + SET_TEXT_COLOR_BLUE + " leave" + RESET_TEXT_COLOR + "\n" +
+                    "to make a move:" + SET_TEXT_COLOR_BLUE + " move <START_POS> <END_POS>" + RESET_TEXT_COLOR + "\n" +
+                    "to resign the game:"+ SET_TEXT_COLOR_BLUE + " resign" + RESET_TEXT_COLOR + "\n" +
+                    "to highlight legal moves:"+ SET_TEXT_COLOR_BLUE + " highlight <PIECE_POS>" + RESET_TEXT_COLOR + "\n";
+        }
         return  "to create a game type:"+ SET_TEXT_COLOR_BLUE + " create <NAME>" + RESET_TEXT_COLOR + "\n" +
                 "to see all games type:" + SET_TEXT_COLOR_BLUE + " list" + RESET_TEXT_COLOR + "\n" +
                 "to join a game type:" + SET_TEXT_COLOR_BLUE + " join <GAMEID> [WHITE|BLACK]" + RESET_TEXT_COLOR + "\n" +
@@ -138,6 +145,7 @@ public class ChessClient implements NotificationHandler {
                 case "observe" -> observe(params);
                 case "redraw" -> redraw();
                 case "leave" -> leave();
+                case "resign" -> resign();
                 case "quit" -> "quit";
                 default -> throw new IllegalStateException("Unexpected input: " + command +"\n");
             };
@@ -300,6 +308,9 @@ public class ChessClient implements NotificationHandler {
 
 
         this.currentGameID = game.gameID();
+        this.playerColor = userColor;
+        this.state = State.IN_GAME;
+        this.currentGame = new ChessGame();
 
         return SET_TEXT_COLOR_GREEN + "Joined " + game.gameName() + " as " + color + "!\n" + RESET_TEXT_COLOR;
 
@@ -341,15 +352,17 @@ public class ChessClient implements NotificationHandler {
 
 
         GameData game = createdGames.get(gameNum -1);
-        DrawChessBoard.drawBoard(ChessGame.TeamColor.WHITE);
+        ws = new WebSocketFacade(serverURL, this);
+        UserGameCommand connect = new UserGameCommand(UserGameCommand.CommandType.CONNECT, authToken, game.gameID());
+        ws.send(connect);
+
+        this.playerColor = null;
+        this.currentGameID = game.gameID();
+        this.state = State.IN_GAME;
+        this.currentGame = new ChessGame();
 
         return SET_TEXT_COLOR_GREEN + "Observing " + game.gameName() +  "!\n" + RESET_TEXT_COLOR;
 
-
-//        NotificationHandler handler = new NotificationHandler;
-//        WebSocketFacade ws = new WebSocketFacade(serverURL, handler);
-//        UserGameCommand connect = new UserGameCommand(UserGameCommand.CommandType.CONNECT, authToken, game.gameID());
-//        ws.send(connect);
     }
 
 
@@ -390,6 +403,28 @@ public class ChessClient implements NotificationHandler {
 
         catch (Exception ex) {
             return SET_TEXT_COLOR_RED + "Error leaving the game: " + ex.getMessage() + "\n" + RESET_TEXT_COLOR;
+        }
+    }
+
+
+    private String resign() {
+        if (state != State.IN_GAME) {
+            return SET_TEXT_COLOR_RED + "You're not in a game! \n" + RESET_TEXT_COLOR;
+        }
+
+        if (playerColor == null) {
+            return SET_TEXT_COLOR_RED + "Observers can't resign! \n" + RESET_TEXT_COLOR;
+
+        }
+        try {
+            UserGameCommand resign = new UserGameCommand(UserGameCommand.CommandType.RESIGN, authToken, currentGameID);
+            ws.send(resign);
+            return SET_TEXT_COLOR_GREEN + "You resigned!! \n" + RESET_TEXT_COLOR;
+
+        }
+        catch (Exception ex) {
+            return SET_TEXT_COLOR_RED + "Error: " + ex.getMessage() + "\n" + RESET_TEXT_COLOR;
+
         }
     }
 
