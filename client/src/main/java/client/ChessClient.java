@@ -1,6 +1,8 @@
 package client;
 
 import chess.ChessGame;
+import chess.ChessMove;
+import chess.ChessPosition;
 import client.websocket.NotificationHandler;
 import client.websocket.WebSocketFacade;
 import com.google.gson.Gson;
@@ -12,6 +14,7 @@ import results.LoginResult;
 import results.RegisterResult;
 import server.ServerFacade;
 import ui.DrawChessBoard;
+import websocket.commands.MakeMoveCommand;
 import websocket.commands.UserGameCommand;
 import websocket.messages.ErrorMessage;
 import websocket.messages.LoadGameMessage;
@@ -146,6 +149,7 @@ public class ChessClient implements NotificationHandler {
                 case "redraw" -> redraw();
                 case "leave" -> leave();
                 case "resign" -> resign();
+                case "move" -> makeMove(params);
                 case "quit" -> "quit";
                 default -> throw new IllegalStateException("Unexpected input: " + command +"\n");
             };
@@ -429,6 +433,68 @@ public class ChessClient implements NotificationHandler {
     }
 
 
+    private String makeMove(String... params) {
+        if (state != State.IN_GAME) {
+            return SET_TEXT_COLOR_RED + "You're not in a game! \n" + RESET_TEXT_COLOR;
+        }
+
+        if (playerColor == null) {
+            return SET_TEXT_COLOR_RED + "Observers can't make moves! \n" + RESET_TEXT_COLOR;
+
+        }
+
+        if (params.length < 2) {
+            return SET_TEXT_COLOR_RED + "Wrong format! Try: move <START_POS> <END_POS> \n" + RESET_TEXT_COLOR;
+
+        }
+
+        try {
+            ChessPosition startPos = getPosition(params[0]);
+            ChessPosition endPos = getPosition(params[1]);
+
+            if (startPos == null || endPos == null) {
+                return null;
+            }
+
+            ChessMove move = new ChessMove(startPos, endPos, null);
+            MakeMoveCommand moveCommand = new MakeMoveCommand(authToken, currentGameID, move);
+            ws.send(moveCommand);
+            return SET_TEXT_COLOR_GREEN +"Move was sent!" + RESET_TEXT_COLOR;
+
+
+        } catch (Exception e) {
+            return SET_TEXT_COLOR_RED + "Error: " + e.getMessage() +  "\n" + RESET_TEXT_COLOR;
+        }
+    }
+
+    private ChessPosition getPosition(String param) {
+        if (param == null) {
+            return null;
+        }
+        param = param.toLowerCase().trim();
+
+        char colLetter = param.charAt(0);
+        if (colLetter < 'a' || colLetter > 'h') {
+            return null;
+        }
+
+
+        int col = colLetter - 'a'-1;
+
+        try {
+            int row = Integer.parseInt(param.substring(1));
+            if (row < 1 || row > 8) {
+                return null;
+            }
+            return new ChessPosition(row, col);
+
+
+        }
+        catch (NumberFormatException e){
+            return null;
+
+        }
+    }
 
 
     private String parseErrors(String message) {
