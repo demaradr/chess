@@ -40,9 +40,15 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
     @Override
     public void handleMessage(WsMessageContext context) throws IOException {
         Session session = context.session;
+        String message = context.message();
         UserGameCommand command = gson.fromJson(context.message(), UserGameCommand.class);
+
+
         switch (command.getCommandType()) {
             case CONNECT -> connectUser(session, command);
+            case MAKE_MOVE -> makeMove(session, message);
+            case LEAVE -> leave(session, command);
+            case RESIGN -> resign(session, command);
         }
     }
 
@@ -54,17 +60,18 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
 
     private void connectUser(Session session, UserGameCommand command) throws IOException {
         try {
-            if (command.getAuthToken() == null) {
-                sendError(session, "Error: unauthorized");
-            }
-
             AuthData auth = authDAO.getAuth(command.getAuthToken());
+            GameData game = gameDAO.getGame(command.getGameID());
 
-            if (command.getGameID() == null) {
-                sendError(session, "Error: invalid game");
+            if (auth == null) {
+                sendError(session, "Error: unauthorized");
+                return;
             }
 
-            GameData game = gameDAO.getGame(command.getGameID());
+            if (game == null) {
+                sendError(session, "Error: no game exists");
+                return;
+            }
 
             ChessGame.TeamColor color = null;
 
@@ -79,8 +86,10 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
                     auth.username(),
                     color,
                     color == null));
-            session.getRemote().sendString(gson.toJson(new LoadGameMessage(game)));
-            String message = "";
+
+
+            session.getRemote().sendString(gson.toJson(new LoadGameMessage(game.game())));
+            String message;
             if (color == null) {
                 message = auth.username() + " connected as observer!";
             } else {
@@ -88,11 +97,7 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
             }
 
             String notification = gson.toJson(new NotificationMessage(message));
-            for (ConnectionManager.Connection conn : connections.allConnections()) {
-                if (conn.gameID() == game.gameID() && conn.session().isOpen()) {
-                    conn.session().getRemote().sendString(notification);
-                }
-            }
+            connections.broadcast(game.gameID(), session, notification);
         }
         catch (Exception ex) {
             sendError(session, "Error: " + ex.getMessage());
@@ -106,11 +111,20 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
             AuthData auth = authDAO.getAuth(move.getAuthToken());
             GameData game = gameDAO.getGame(move.getGameID());
 
-
-            if (move == null || move.getGameID() == null) {
-                sendError(session, "Error: not a valid move");
+            if (auth == null) {
+                sendError(session, "Error: unauthorized");
                 return;
             }
+
+            if (game == null) {
+                sendError(session, "Error: no game exists");
+                return;
+            }
+
+            if (game.whiteUsername() == null && game.blackUsername() == null) {
+                sendError(session, "Error: the game is over");
+            }
+
 
             ChessGame.TeamColor color = null;
             if (auth.username().equals(game.whiteUsername())) {
@@ -133,6 +147,11 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
             }
 
             ChessGame chessGame = game.game();
+
+            if (chessGame.getTeamTurn() != color) {
+                sendError(session, "Error: its not your turn");
+                return;
+            }
             try {
                 chessGame.makeMove(chessMove);
             }
@@ -146,6 +165,41 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
                     game.blackUsername(), game.gameName(), chessGame);
             gameDAO.updateGame(update);
 
+            String moveDesc = move.getMoveDescription();
+            String moveNoti = auth.username() + " made move: " + moveDesc;
+            String loadMessage = gson.toJson(new LoadGameMessage(chessGame));
+            connections.broadcast(game.gameID(), null, loadMessage);
+            String notification = gson.toJson(new NotificationMessage(moveNoti));
+            connections.broadcast(game.gameID(), session, notification);
+
+            ChessGame.TeamColor turn = chessGame.getTeamTurn();
+            String opponent = null;
+
+            if (turn == ChessGame.TeamColor.WHITE) {
+                opponent = game.whiteUsername();
+            }
+            else if (turn == ChessGame.TeamColor.BLACK) {
+                opponent = game.blackUsername();
+            }
+
+            String statusNoti;
+
+            if (chessGame.isInCheckmate(turn)) {
+                statusNoti = gson.toJson(new NotificationMessage(opponent + "is in checkmate!"));
+
+            }
+            else if (chessGame.isInStalemate(turn)) {
+                statusNoti = gson.toJson(new NotificationMessage(opponent + "is in stalemate!"));
+            }
+            else if (chessGame.isInCheck(turn)) {
+                statusNoti = gson.toJson(new NotificationMessage(opponent + "is in check!"));
+            }
+            else statusNoti = null;
+
+            if (statusNoti != null) {
+                connections.broadcast(game.gameID(), null, statusNoti);
+            }
+
         }
         catch (Exception ex) {
             sendError(session, ex.getMessage());
@@ -154,18 +208,20 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
 
     private void leave(Session session, UserGameCommand command) throws IOException {
         try {
-            if (command.getAuthToken() == null) {
+
+
+            AuthData auth = authDAO.getAuth(command.getAuthToken());
+            GameData game = gameDAO.getGame(command.getGameID());
+
+            if (auth == null) {
                 sendError(session, "Error: unauthorized");
                 return;
             }
 
-            if (command.getGameID() == null) {
-                sendError(session, "Error");
+            if (game == null) {
+                sendError(session, "Error: no game exists");
                 return;
             }
-
-            AuthData auth = authDAO.getAuth(command.getAuthToken());
-            GameData game = gameDAO.getGame(command.getGameID());
 
 
             ChessGame.TeamColor color = null;
@@ -177,8 +233,8 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
             }
 
             if (color != null) {
-                String white = color == ChessGame.TeamColor.WHITE ? null : game.whiteUsername();
-                String black = color == ChessGame.TeamColor.BLACK ? null: game.blackUsername();
+                String white = (color == ChessGame.TeamColor.WHITE) ? null : game.whiteUsername();
+                String black = (color == ChessGame.TeamColor.BLACK) ? null: game.blackUsername();
 
                 GameData update = new GameData(game.gameID(), white, black, game.gameName(), game.game());
                 gameDAO.updateGame(update);
@@ -186,10 +242,15 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
 
             connections.remove(session);
 
+            String username = auth.username();
+            String message = username + "left the game!";
+            String notification = gson.toJson(new NotificationMessage(message));
+            connections.broadcast(game.gameID(), session, notification);
+
 
         }
         catch (Exception ex) {
-            sendError(session, ex.getMessage());
+            sendError(session, "Error: " + ex.getMessage());
         }
     }
 
@@ -199,12 +260,12 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
             GameData game = gameDAO.getGame(command.getGameID());
 
             if (auth == null) {
-                sendError(session, "Error");
+                sendError(session, "Error: unauthorized");
                 return;
             }
 
             if (game == null) {
-                sendError(session, "Error");
+                sendError(session, "Error: no game exists");
                 return;
             }
 
@@ -222,11 +283,16 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
                 return;
             }
 
-            gameDAO.updateGame(game);
+            GameData update = new GameData(game.gameID(), null, null, game.gameName(), game.game());
+            gameDAO.updateGame(update);
+
+            String message = auth.username() + "resigned!";
+            String notification = gson.toJson(new NotificationMessage(message));
+            connections.broadcast(game.gameID(), null, notification);
 
         }
         catch (Exception ex) {
-            sendError(session, ex.getMessage());
+            sendError(session, "Error: " + ex.getMessage());
         }
     }
 

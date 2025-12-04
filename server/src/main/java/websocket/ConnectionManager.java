@@ -33,4 +33,14 @@ public class ConnectionManager {
                              ChessGame.TeamColor color,
                              boolean observer) {
     }
+
+    public void broadcast(int gameID, Session exludeSession, String message) throws IOException {
+        for (Connection c : connections.values()) {
+            if (c.gameID() == gameID && c.session().isOpen()) {
+                if (c.session().equals(exludeSession)) {
+                    c.session().getRemote().sendString(message);
+                }
+            }
+        }
+    }
 }
