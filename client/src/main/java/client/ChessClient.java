@@ -2,13 +2,13 @@ package client;
 
 import chess.ChessGame;
 import chess.ChessMove;
+import chess.ChessPiece;
 import chess.ChessPosition;
 import client.websocket.NotificationHandler;
 import client.websocket.WebSocketFacade;
 import com.google.gson.Gson;
 import exception.ResponseException;
 import models.GameData;
-import results.CreateGameResult;
 import results.ListGamesResult;
 import results.LoginResult;
 import results.RegisterResult;
@@ -86,12 +86,12 @@ public class ChessClient implements NotificationHandler {
 
             case NOTIFICATION -> {
                 NotificationMessage noti = (NotificationMessage) message;
-                System.out.println(noti.getNotification());
+                System.out.println(noti.getMessage());
             }
 
             case ERROR -> {
                 ErrorMessage error = (ErrorMessage) message;
-                System.out.println(error.getError());
+                System.out.println(error.getErrorMessage());
             }
         }
     }
@@ -112,7 +112,7 @@ public class ChessClient implements NotificationHandler {
                     "to exit chess type:"+ SET_TEXT_COLOR_BLUE + " quit" + RESET_TEXT_COLOR + "\n";
         }
         else if (state == State.IN_GAME){
-            return "to redraw board:"+ SET_TEXT_COLOR_BLUE + " redraw" + RESET_TEXT_COLOR + "\n" +
+            return "\nto redraw board:"+ SET_TEXT_COLOR_BLUE + " redraw" + RESET_TEXT_COLOR + "\n" +
                     "to leave the game:" + SET_TEXT_COLOR_BLUE + " leave" + RESET_TEXT_COLOR + "\n" +
                     "to make a move:" + SET_TEXT_COLOR_BLUE + " move <START_POS> <END_POS>" + RESET_TEXT_COLOR + "\n" +
                     "to resign the game:"+ SET_TEXT_COLOR_BLUE + " resign" + RESET_TEXT_COLOR + "\n" +
@@ -134,6 +134,9 @@ public class ChessClient implements NotificationHandler {
     public String eval(String input) {
 
         try {
+            if (input == null) {
+                return "";
+            }
             String[] tokens = input.toLowerCase().split(" ");
             String command = (tokens.length > 0) ? tokens[0] : "help";
             String[] params = Arrays.copyOfRange(tokens, 1, tokens.length);
@@ -459,8 +462,8 @@ public class ChessClient implements NotificationHandler {
             }
 
             ChessMove move = new ChessMove(startPos, endPos, null);
-            String moveDesc = params[0].toLowerCase() + "to" + params[1].toLowerCase();
-            MakeMoveCommand moveCommand = new MakeMoveCommand(authToken, currentGameID, move, null);
+            String moveDesc = params[0].toLowerCase() + " to " + params[1].toLowerCase();
+            MakeMoveCommand moveCommand = new MakeMoveCommand(authToken, currentGameID, move, moveDesc);
             ws.send(moveCommand);
             return SET_TEXT_COLOR_GREEN +"Move was sent!" + RESET_TEXT_COLOR;
 
@@ -471,6 +474,7 @@ public class ChessClient implements NotificationHandler {
     }
 
     private String highlight(String... params) {
+
         if (state != State.IN_GAME) {
             return SET_TEXT_COLOR_RED + "You're not in a game!\n" + RESET_TEXT_COLOR;
 
@@ -482,9 +486,20 @@ public class ChessClient implements NotificationHandler {
 
         try {
             ChessPosition piecePos = getPosition(params[0]);
+
+            if (piecePos == null) {
+                return SET_TEXT_COLOR_RED + "Wrong format! Try: highlight <POSITION> \n" + RESET_TEXT_COLOR;
+
+            }
+
+            ChessPiece piece = currentGame.getBoard().getPiece(piecePos);
+            if (piece == null) {
+                return SET_TEXT_COLOR_RED + "There is no piece at " + params[0] + " \n" + RESET_TEXT_COLOR;
+
+            }
             var validMoves = currentGame.validMoves(piecePos);
-            if (validMoves == null) {
-                return SET_TEXT_COLOR_RED + "No valid moves for piece at " +piecePos + " \n" + RESET_TEXT_COLOR;
+            if (validMoves == null || validMoves.isEmpty()) {
+                return SET_TEXT_COLOR_RED + "No valid moves for piece at that position!" + RESET_TEXT_COLOR;
 
             }
 

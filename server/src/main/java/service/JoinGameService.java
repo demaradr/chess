@@ -1,5 +1,6 @@
 package service;
 
+import chess.ChessGame;
 import dataaccess.AuthDAO;
 import dataaccess.DataAccessException;
 import dataaccess.GameDAO;
@@ -40,10 +41,18 @@ public class JoinGameService {
                 throw new ServiceException("Error: bad request");
             }
 
+
             GameData game = gameDAO.getGame(request.gameID());
-            if (game == null) {
-                throw new ServiceException("Error: bad request");
+
+            ChessGame chessGame = game.game();
+
+            if (chessGame.isInCheckmate(ChessGame.TeamColor.BLACK) ||
+                    chessGame.isInCheckmate(ChessGame.TeamColor.WHITE) ||
+                    chessGame.isInStalemate(ChessGame.TeamColor.BLACK) ||
+                    chessGame.isInStalemate(ChessGame.TeamColor.WHITE)) {
+                throw new ServiceException("Error; the game is finished!");
             }
+
 
             if (request.playerColor().equals("WHITE") && game.whiteUsername() != null && !game.whiteUsername().equals(username)) {
                 throw new ServiceException("Error: already taken");

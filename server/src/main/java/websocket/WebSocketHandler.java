@@ -91,9 +91,9 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
             session.getRemote().sendString(gson.toJson(new LoadGameMessage(game.game())));
             String message;
             if (color == null) {
-                message = auth.username() + " connected as observer!";
+                message = auth.username() + " connected as observer!\n";
             } else {
-                message = auth.username() + " connected as " + color.name().toLowerCase();
+                message = auth.username() + " connected as " + color.name().toLowerCase() + "\n";
             }
 
 
@@ -123,11 +123,16 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
                 return;
             }
 
-            if (game.whiteUsername() == null && game.blackUsername() == null) {
+
+            ChessGame chessGame = game.game();
+            if (chessGame.isInCheckmate(ChessGame.TeamColor.BLACK) ||
+                    chessGame.isInCheckmate(ChessGame.TeamColor.WHITE) ||
+                    chessGame.isInStalemate(ChessGame.TeamColor.BLACK) ||
+                    chessGame.isInStalemate(ChessGame.TeamColor.WHITE)) {
                 sendError(session, "Error: the game is over");
                 return;
-            }
 
+            }
 
             ChessGame.TeamColor color = null;
             if (auth.username().equals(game.whiteUsername())) {
@@ -149,17 +154,22 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
                 return;
             }
 
-            ChessGame chessGame = game.game();
-
             if (chessGame.getTeamTurn() != color) {
                 sendError(session, "Error: its not your turn");
                 return;
             }
+
+            boolean inCheck = chessGame.isInCheck(color);
             try {
                 chessGame.makeMove(chessMove);
             }
             catch (InvalidMoveException ex){
-                sendError(session, "Error: invalid move");
+                if (inCheck) {
+                    sendError(session, "Error: You're in check - invalid move");
+                }
+                else {
+                    sendError(session, "Error: invalid move");
+                }
                 return;
             }
 
@@ -169,7 +179,7 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
             gameDAO.updateGame(update);
 
             String moveDesc = move.getMoveDescription();
-            String moveNoti = auth.username() + " made move: " + moveDesc;
+            String moveNoti = auth.username() + " made move: " + moveDesc + "\n";
             String loadMessage = gson.toJson(new LoadGameMessage(chessGame));
             connections.broadcast(game.gameID(), null, loadMessage);
             String notification = gson.toJson(new NotificationMessage(moveNoti));
@@ -177,30 +187,45 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
 
             ChessGame.TeamColor turn = chessGame.getTeamTurn();
             String opponent = null;
+            String player = null;
 
             if (turn == ChessGame.TeamColor.WHITE) {
-                opponent = game.whiteUsername();
+                player = game.whiteUsername();
+                opponent = game.blackUsername();
             }
             else if (turn == ChessGame.TeamColor.BLACK) {
-                opponent = game.blackUsername();
+                player = game.blackUsername();
+                opponent = game.whiteUsername();
             }
 
             String statusNoti;
 
             if (chessGame.isInCheckmate(turn)) {
-                statusNoti = gson.toJson(new NotificationMessage(opponent + "is in checkmate!"));
+                if (opponent != null) {
+                    String winMessage = opponent + " wins by checkmate!\n";
+                    String winNoti = gson.toJson(new NotificationMessage(winMessage));
+                    connections.broadcast(game.gameID(), null, winNoti);
+                }
 
+                if (player != null) {
+                    statusNoti = gson.toJson(new NotificationMessage(player + " is in checkmate!\n"));
+                    connections.broadcast(game.gameID(), null, statusNoti);
+                }
             }
             else if (chessGame.isInStalemate(turn)) {
-                statusNoti = gson.toJson(new NotificationMessage(opponent + "is in stalemate!"));
-            }
-            else if (chessGame.isInCheck(turn)) {
-                statusNoti = gson.toJson(new NotificationMessage(opponent + "is in check!"));
-            }
-            else statusNoti = null;
-
-            if (statusNoti != null) {
+                statusNoti = gson.toJson(new NotificationMessage("It's a draw! Due to stalemate\n"));
                 connections.broadcast(game.gameID(), null, statusNoti);
+
+
+                if (player != null) {
+                    statusNoti = gson.toJson(new NotificationMessage(player + " is in stalemate \n"));
+
+                }            }
+            else if (chessGame.isInCheck(turn)) {
+                if (player != null) {
+                    statusNoti = gson.toJson(new NotificationMessage(player + " is in check\n"));
+                    connections.broadcast(game.gameID(), null, statusNoti);
+                }
             }
 
         }
@@ -246,7 +271,7 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
             connections.remove(session);
 
             String username = auth.username();
-            String message = username + "left the game!";
+            String message = username + " left the game!\n";
             String notification = gson.toJson(new NotificationMessage(message));
             connections.broadcast(game.gameID(), session, notification);
 
@@ -289,7 +314,7 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
             GameData update = new GameData(game.gameID(), null, null, game.gameName(), game.game());
             gameDAO.updateGame(update);
 
-            String message = auth.username() + "resigned!";
+            String message = auth.username() + " resigned! \n";
             String notification = gson.toJson(new NotificationMessage(message));
             connections.broadcast(game.gameID(), null, notification);
 

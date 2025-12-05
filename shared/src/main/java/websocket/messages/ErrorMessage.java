@@ -4,15 +4,15 @@ import java.util.Objects;
 
 public class ErrorMessage extends ServerMessage{
 
-    private final String error;
+    private final String errorMessage;
 
     public ErrorMessage(String error) {
         super(ServerMessageType.ERROR);
-        this.error = error;
+        this.errorMessage = error;
     }
 
-    public String getError() {
-        return error;
+    public String getErrorMessage() {
+        return errorMessage;
 
     }
 
@@ -25,11 +25,11 @@ public class ErrorMessage extends ServerMessage{
             return false;
         }
         ErrorMessage that = (ErrorMessage) o;
-        return Objects.equals(error, that.error);
+        return Objects.equals(errorMessage, that.errorMessage);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), error);
+        return Objects.hash(super.hashCode(), errorMessage);
     }
 }

@@ -22,6 +22,7 @@ public class DrawChessBoard {
 
     public static void drawBoard(ChessGame game, ChessGame.TeamColor color, Collection<ChessPosition> highlightPos) {
         var out = new PrintStream(System.out, true, StandardCharsets.UTF_8);
+        out.println();
         out.print(ERASE_SCREEN);
 
         ChessBoard board = game.getBoard();
@@ -33,6 +34,7 @@ public class DrawChessBoard {
         else {
             drawBoardBlack(out,board, highlight);
         }
+        out.println();
     }
 
 
