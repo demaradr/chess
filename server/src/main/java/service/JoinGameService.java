@@ -45,12 +45,13 @@ public class JoinGameService {
                 throw new ServiceException("Error: bad request");
             }
 
-            if (request.playerColor().equals("WHITE") && game.whiteUsername() != null) {
+            if (request.playerColor().equals("WHITE") && game.whiteUsername() != null && !game.whiteUsername().equals(username)) {
                 throw new ServiceException("Error: already taken");
             }
-            if (request.playerColor().equals("BLACK") && game.blackUsername() != null) {
+            if (request.playerColor().equals("BLACK") && game.blackUsername() != null && !game.blackUsername().equals(username)) {
                 throw new ServiceException("Error: already taken");
             }
+
 
             String whiteUsername = request.playerColor().equals("WHITE") ? username : game.whiteUsername();
             String blackUsername = request.playerColor().equals("BLACK") ? username : game.blackUsername();

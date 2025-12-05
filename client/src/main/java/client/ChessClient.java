@@ -150,6 +150,7 @@ public class ChessClient implements NotificationHandler {
                 case "leave" -> leave();
                 case "resign" -> resign();
                 case "move" -> makeMove(params);
+                case "highlight" -> highlight(params);
                 case "quit" -> "quit";
                 default -> throw new IllegalStateException("Unexpected input: " + command +"\n");
             };
@@ -383,7 +384,7 @@ public class ChessClient implements NotificationHandler {
 
         }
         ChessGame.TeamColor viewColor = (playerColor != null) ? playerColor : ChessGame.TeamColor.WHITE;
-        DrawChessBoard.drawBoard(viewColor);
+        DrawChessBoard.drawBoard(currentGame, viewColor);
         return "";
     }
 
@@ -453,11 +454,13 @@ public class ChessClient implements NotificationHandler {
             ChessPosition endPos = getPosition(params[1]);
 
             if (startPos == null || endPos == null) {
-                return null;
+                return SET_TEXT_COLOR_RED + "Wrong format! Example: move a2 a3 \n" + RESET_TEXT_COLOR;
+
             }
 
             ChessMove move = new ChessMove(startPos, endPos, null);
-            MakeMoveCommand moveCommand = new MakeMoveCommand(authToken, currentGameID, move);
+            String moveDesc = params[0].toLowerCase() + "to" + params[1].toLowerCase();
+            MakeMoveCommand moveCommand = new MakeMoveCommand(authToken, currentGameID, move, null);
             ws.send(moveCommand);
             return SET_TEXT_COLOR_GREEN +"Move was sent!" + RESET_TEXT_COLOR;
 
@@ -465,6 +468,41 @@ public class ChessClient implements NotificationHandler {
         } catch (Exception e) {
             return SET_TEXT_COLOR_RED + "Error: " + e.getMessage() +  "\n" + RESET_TEXT_COLOR;
         }
+    }
+
+    private String highlight(String... params) {
+        if (state != State.IN_GAME) {
+            return SET_TEXT_COLOR_RED + "You're not in a game!\n" + RESET_TEXT_COLOR;
+
+        }
+        if (params.length < 1) {
+            return SET_TEXT_COLOR_RED + "Wrong format! Try: highlight <POSITION> \n" + RESET_TEXT_COLOR;
+
+        }
+
+        try {
+            ChessPosition piecePos = getPosition(params[0]);
+            var validMoves = currentGame.validMoves(piecePos);
+            if (validMoves == null) {
+                return SET_TEXT_COLOR_RED + "No valid moves for piece at " +piecePos + " \n" + RESET_TEXT_COLOR;
+
+            }
+
+            var highlightedPos = new ArrayList<ChessPosition>();
+            highlightedPos.add(piecePos);
+            for (ChessMove move : validMoves) {
+                highlightedPos.add(move.getEndPosition());
+            }
+
+            ChessGame.TeamColor color = (playerColor != null) ? playerColor : ChessGame.TeamColor.WHITE;
+            DrawChessBoard.drawBoard(currentGame, color, highlightedPos);
+
+            return "";
+        }
+        catch (Exception ex) {
+            return SET_TEXT_COLOR_RED + "Error: " + ex.getMessage() +  "\n" + RESET_TEXT_COLOR;
+        }
+
     }
 
     private ChessPosition getPosition(String param) {
@@ -479,7 +517,7 @@ public class ChessClient implements NotificationHandler {
         }
 
 
-        int col = colLetter - 'a'-1;
+        int col = colLetter - 'a'+ 1;
 
         try {
             int row = Integer.parseInt(param.substring(1));

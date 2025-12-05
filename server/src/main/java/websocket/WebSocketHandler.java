@@ -93,8 +93,10 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
             if (color == null) {
                 message = auth.username() + " connected as observer!";
             } else {
-                message = auth.username() + "connected as " + color.name().toLowerCase();
+                message = auth.username() + " connected as " + color.name().toLowerCase();
             }
+
+
 
             String notification = gson.toJson(new NotificationMessage(message));
             connections.broadcast(game.gameID(), session, notification);
@@ -123,6 +125,7 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
 
             if (game.whiteUsername() == null && game.blackUsername() == null) {
                 sendError(session, "Error: the game is over");
+                return;
             }
 
 

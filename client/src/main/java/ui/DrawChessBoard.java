@@ -7,27 +7,42 @@ import chess.ChessPosition;
 
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 
 import static ui.EscapeSequences.*;
 
 public class DrawChessBoard {
 
-    public static void drawBoard(ChessGame.TeamColor color) {
+    public static void drawBoard(ChessGame game, ChessGame.TeamColor color) {
+        drawBoard(game, color, null);
+    }
+
+    public static void drawBoard(ChessGame game, ChessGame.TeamColor color, Collection<ChessPosition> highlightPos) {
         var out = new PrintStream(System.out, true, StandardCharsets.UTF_8);
         out.print(ERASE_SCREEN);
 
-        ChessBoard board = new ChessBoard();
-        board.resetBoard();
+        ChessBoard board = game.getBoard();
+        Set<ChessPosition> highlight = highlightPos != null ? new HashSet<>(highlightPos) : new HashSet<>();
+
         if (color == ChessGame.TeamColor.WHITE) {
-            drawBoardWhite(out, board);
+            drawBoardWhite(out, board, highlight);
         }
         else {
-            drawBoardBlack(out,board);
+            drawBoardBlack(out,board, highlight);
         }
     }
 
+
     private static void drawBoardWhite(PrintStream out, ChessBoard board) {
+        drawBoardWhite(out, board, new HashSet<>());
+    }
+
+
+
+    private static void drawBoardWhite(PrintStream out, ChessBoard board, Set<ChessPosition> highlightPos) {
 
         headersWhite(out);
 
@@ -37,7 +52,10 @@ public class DrawChessBoard {
             out.print(" " + rowNum + " ");
             for (int col = 0; col < 8; col++) {
                 int colNum = col + 1;
-                drawHelper(out, board, rowNum, colNum);
+                ChessPosition pos = new ChessPosition(rowNum, colNum);
+
+                boolean highlighted = highlightPos.contains(pos);
+                drawHelper(out, board, rowNum, colNum, highlighted);
 
 
             }
@@ -54,10 +72,13 @@ public class DrawChessBoard {
 
     }
 
-    private static void drawHelper(PrintStream out, ChessBoard board, int rowNum, int colNum) {
+    private static void drawHelper(PrintStream out, ChessBoard board, int rowNum, int colNum, boolean highlighted) {
         boolean lightSquare = ((rowNum + colNum) % 2 != 0);
 
-        if (lightSquare) {
+        if (highlighted) {
+            out.print(SET_BG_COLOR_DARK_GREEN);
+        }
+        else if (lightSquare) {
             setLightSquare(out);
         }
         else {
@@ -79,7 +100,12 @@ public class DrawChessBoard {
     }
 
 
+
     private static void drawBoardBlack(PrintStream out, ChessBoard board) {
+        drawBoardBlack(out, board, new HashSet<>());
+    }
+
+    private static void drawBoardBlack(PrintStream out, ChessBoard board, Set<ChessPosition> highlightPos) {
 
         headersBlack(out);
 
@@ -89,7 +115,12 @@ public class DrawChessBoard {
             out.print(" " + rowNum + " ");
             for (int col = 0; col < 8; col++) {
                 int colNum = 8 - col;
-                drawHelper(out, board, rowNum, colNum);
+                ChessPosition pos = new ChessPosition(rowNum, colNum);
+                boolean highlighted = highlightPos.contains(pos);
+
+
+
+                drawHelper(out, board, rowNum, colNum, highlighted);
 
                 setBorder(out);
 

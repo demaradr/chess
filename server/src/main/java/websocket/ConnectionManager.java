@@ -19,7 +19,7 @@ public class ConnectionManager {
     }
 
     public void remove(Session session) {
-        connections.remove(session);
+        connections.remove(String.valueOf(session));
     }
 
     Collection<Connection> allConnections() {
@@ -37,7 +37,7 @@ public class ConnectionManager {
     public void broadcast(int gameID, Session exludeSession, String message) throws IOException {
         for (Connection c : connections.values()) {
             if (c.gameID() == gameID && c.session().isOpen()) {
-                if (c.session().equals(exludeSession)) {
+                if (!c.session().equals(exludeSession)) {
                     c.session().getRemote().sendString(message);
                 }
             }
