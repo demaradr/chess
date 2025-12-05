@@ -42,6 +42,7 @@ public class ChessClient implements NotificationHandler {
     private ChessGame currentGame;
     private ChessGame.TeamColor playerColor;
     private Integer currentGameID;
+    private final Scanner scanner = new Scanner(System.in);
 
 
 
@@ -53,7 +54,6 @@ public class ChessClient implements NotificationHandler {
     public void run() {
         System.out.println("\nHello there! Welcome to 240 Chess ♕ \nType help to start :)\n");
 
-        Scanner scanner = new Scanner(System.in);
         var result = "";
 
         while (!result.equals("quit")) {
@@ -425,6 +425,11 @@ public class ChessClient implements NotificationHandler {
 
         }
         try {
+            System.out.print("\nConfirm resign (yes/no): ");
+            String reponse = scanner.nextLine().toLowerCase();
+            if(!reponse.equals("yes")) {
+                return SET_TEXT_COLOR_RED + "Resign was cancelled!" + RESET_TEXT_COLOR;
+            }
             UserGameCommand resign = new UserGameCommand(UserGameCommand.CommandType.RESIGN, authToken, currentGameID);
             ws.send(resign);
             return SET_TEXT_COLOR_GREEN + "You resigned!! \n" + RESET_TEXT_COLOR;
@@ -461,7 +466,34 @@ public class ChessClient implements NotificationHandler {
 
             }
 
-            ChessMove move = new ChessMove(startPos, endPos, null);
+            if (currentGame == null) {
+                return SET_TEXT_COLOR_RED + "No game loaded! \n" + RESET_TEXT_COLOR;
+
+            }
+
+            ChessPiece startPiece = currentGame.getBoard().getPiece(startPos);
+            if(startPiece == null) {
+                return SET_TEXT_COLOR_RED + "No piece at " + params[0] + "\n" + RESET_TEXT_COLOR;
+            }
+
+            ChessPiece.PieceType promotion = null;
+            boolean edge = (startPiece.getTeamColor() == ChessGame.TeamColor.WHITE && endPos.getRow() == 8) ||
+                    (startPiece.getTeamColor() == ChessGame.TeamColor.BLACK && endPos.getRow() ==1);
+
+            if (startPiece.getPieceType() == ChessPiece.PieceType.PAWN && edge) {
+                System.out.print("You can promote! Let's gooo! Choose promotion piece: Q R B K");
+                String pick = scanner.nextLine().trim().toUpperCase();
+                promotion = switch (pick.charAt(0)) {
+                    case 'Q' -> ChessPiece.PieceType.QUEEN;
+                    case 'R' -> ChessPiece.PieceType.ROOK;
+                    case 'B' -> ChessPiece.PieceType.BISHOP;
+                    case 'K' -> ChessPiece.PieceType.KNIGHT;
+                    default -> throw new IllegalStateException("Unexpected value: " + pick.charAt(0));
+                };
+            }
+
+            ChessMove move = new ChessMove(startPos, endPos, promotion);
+
             String moveDesc = params[0].toLowerCase() + " to " + params[1].toLowerCase();
             MakeMoveCommand moveCommand = new MakeMoveCommand(authToken, currentGameID, move, moveDesc);
             ws.send(moveCommand);
@@ -535,7 +567,7 @@ public class ChessClient implements NotificationHandler {
         int col = colLetter - 'a'+ 1;
 
         try {
-            int row = Integer.parseInt(param.substring(1));
+            int row = parseInt(param.substring(1));
             if (row < 1 || row > 8) {
                 return null;
             }
