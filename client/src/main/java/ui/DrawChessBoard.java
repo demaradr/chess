@@ -62,7 +62,7 @@ public class DrawChessBoard {
 
             }
             setBorder(out);
-            out.print(" " + row + " ");
+            out.print(" " + rowNum + " ");
             reset(out);
             out.println();
 

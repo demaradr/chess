@@ -22,10 +22,6 @@ public class ConnectionManager {
         connections.remove(String.valueOf(session));
     }
 
-    Collection<Connection> allConnections() {
-        return connections.values();
-    }
-
 
     public record Connection(Session session,
                              int gameID,
