@@ -181,7 +181,7 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
             String statusNoti;
             if (chessGame.isInCheckmate(turn)) {
                 if (opponent != null) {
-                    String winMessage = opponent + " wins by checkmate!\n";
+                    String winMessage = opponent + " wins by checkmating " + player + "!\n";
                     String winNoti = gson.toJson(new NotificationMessage(winMessage));
                     connections.broadcast(result.game().gameID(), null, winNoti);
                 }
